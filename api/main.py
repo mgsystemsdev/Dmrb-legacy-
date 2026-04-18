@@ -62,10 +62,11 @@ app.include_router(notes.router, prefix="/api", tags=["notes"])
 app.include_router(units.router, prefix="/api", tags=["units"])
 
 frontend_dist = Path("frontend/dist")
-if not frontend_dist.exists():
-    raise RuntimeError("Missing React build at frontend/dist. Run the frontend build before starting FastAPI.")
-
-app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="spa")
+if frontend_dist.exists():
+    app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="spa")
+    logger.info("Frontend mounted at / from frontend/dist")
+else:
+    logger.warning("Frontend build not found at frontend/dist — serving API only. Check build logs for TypeScript/Vite errors.")
 
 serializer = URLSafeTimedSerializer(SECRET_KEY)
 AUTH_COOKIE_NAME = "session"
