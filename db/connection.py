@@ -45,6 +45,19 @@ def _get_pool() -> psycopg2.pool.ThreadedConnectionPool:
     return _pool
 
 
+def get_pool_stats() -> dict:
+    pool = _get_pool()
+    # psycopg2 pool doesn't have a lot of public stats, but we can return min/max
+    # and maybe check internal state if we really want to, but min/max is a start.
+    # Actually, AbstractConnectionPool has _used and _pool lists.
+    return {
+        "minconn": pool.minconn,
+        "maxconn": pool.maxconn,
+        "used": len(pool._used) if hasattr(pool, "_used") else -1,
+        "rused": len(pool._rused) if hasattr(pool, "_rused") else -1,
+    }
+
+
 @contextlib.contextmanager
 def get_connection():
     """Acquire a connection from the pool.

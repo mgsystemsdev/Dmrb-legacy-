@@ -57,4 +57,4 @@ Full table and architecture rules: **[CLAUDE.md](CLAUDE.md)**. Operator-facing f
 
 ## License
 
-Add a license file if you intend to distribute this repository.
+See the [`LICENSE`](LICENSE) file in the repository root for terms of use.

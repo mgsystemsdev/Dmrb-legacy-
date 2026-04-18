@@ -37,6 +37,7 @@ APP_USERNAME = get_setting("APP_USERNAME", "")
 APP_PASSWORD = get_setting("APP_PASSWORD", "")
 VALIDATOR_USERNAME = get_setting("VALIDATOR_USERNAME", "")
 VALIDATOR_PASSWORD = get_setting("VALIDATOR_PASSWORD", "")
+SECRET_KEY = get_setting("SECRET_KEY", "dev-secret-key-change-me-in-production")
 
 # Streamlit login: "env" = APP_* / VALIDATOR_* (default). "db" = public.app_user + Argon2.
 _LEGACY_AUTH_SRC = (get_setting("LEGACY_AUTH_SOURCE", "env") or "env").strip().lower()
