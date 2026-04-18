@@ -10,7 +10,7 @@ from api.middleware.auth import AuthMiddleware
 from api.routers import auth, board, health, imports, notes, operations, properties, tasks, turnovers, units
 from api.schemas.auth import LoginRequest
 from services import auth_service
-from config.settings import SECRET_KEY
+from config.settings import SECRET_KEY, SESSION_COOKIE_SECURE
 
 logger = logging.getLogger(__name__)
 
@@ -19,14 +19,25 @@ app = FastAPI(title="DMRB Legacy API")
 
 @app.on_event("startup")
 async def _apply_migrations() -> None:
-    """Run idempotent schema + incremental migrations before serving traffic."""
+    """Run idempotent schema + incremental migrations before serving traffic.
+
+    Failures are logged loudly but do NOT crash the app — this ensures the
+    public /healthz endpoint stays reachable so Railway's deploy can finish
+    and surface the real error in logs (usually a missing/invalid
+    DATABASE_URL). Real request handlers will still fail fast if the DB is
+    unreachable.
+    """
     from db.migration_runner import ensure_database_ready
 
     try:
         ensure_database_ready()
+        logger.info("Database migrations applied successfully")
     except Exception as exc:
-        logger.exception("Database migration on startup failed: %s", exc)
-        raise
+        logger.error(
+            "Database migration on startup failed (app will start anyway "
+            "so /healthz responds; set DATABASE_URL and redeploy): %s",
+            exc,
+        )
 
 
 @app.get("/healthz", tags=["health"])
