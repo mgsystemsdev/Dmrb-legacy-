@@ -2,15 +2,19 @@
 # Schema: https://nixpacks.com/docs/configuration/file
 #
 # We use the auto-detected Python + Node providers for the toolchain (avoids
-# Nix package collisions when pinning versions manually) and override only the
-# install and build phases to handle the `frontend/` subfolder layout.
+# Nix package collisions when pinning versions manually) and override the
+# install/build phases to handle the `frontend/` subfolder layout AND to
+# create the virtualenv at /opt/venv that the Nixpacks image expects on
+# NIXPACKS_PATH. Replacing phases.install.cmds drops the provider's default
+# venv-creation step, so we re-implement it here.
 
 providers = ["python", "node"]
 
 [phases.install]
 cmds = [
-  "python -m pip install --upgrade pip",
-  "python -m pip install -r requirements.txt",
+  "python -m venv --copies /opt/venv",
+  "/opt/venv/bin/pip install --upgrade pip",
+  "/opt/venv/bin/pip install -r requirements.txt",
   "npm --prefix frontend ci",
 ]
 
@@ -20,4 +24,4 @@ cmds = [
 ]
 
 [start]
-cmd = "uvicorn api.main:app --host 0.0.0.0 --port ${PORT} --proxy-headers --forwarded-allow-ips=*"
+cmd = "/opt/venv/bin/uvicorn api.main:app --host 0.0.0.0 --port ${PORT} --proxy-headers --forwarded-allow-ips=*"
