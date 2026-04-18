@@ -328,7 +328,14 @@ Verification:
 
 ## Phase 6: Screen-by-Screen Cutover
 
-Migration order:
+### Strategic fork
+
+- **Path A (HTMX hybrid, above):** Phase 5 ships the board as Jinja + HTMX. Phase 6 migrates additional routes behind Nginx while Streamlit covers unmigrated screens.
+- **Path B (React SPA):** Skip HTMX board templates. FastAPI serves JSON under `/api/*` and the Vite build from `/` (`StaticFiles(..., html=True)`). React Router owns all URLs below. Remove `api/routers/pages.py`, `api/templates/`, and root Tailwind/static artifacts once React owns styling inside `frontend/`.
+
+Path B does **not** invalidate Phase 0–4 or the board API from Phase 3; it replaces Phase 5’s template surface and widens Phase 1’s API scope to match the JSON contract the React app needs (see terminal plan: properties, turnovers, tasks, notes, schedule, morning, risk, exports, imports, admin, validator, AI).
+
+### Path A — proxy migration order (HTMX)
 
 1. `/health`
 2. `/board`
@@ -336,7 +343,48 @@ Migration order:
 4. `/unit/{turnover_id}`
 5. `/admin`
 6. `/exports`
-7. Remaining screens
+7. Remaining screens (use Path B table below as the implementation checklist for parity)
+
+### Path B — Phase 6 remaining screens (easiest → hardest)
+
+Implement after the **core shell** (login, sidebar, property context, `/board/:propertyId`, `/unit/:turnoverId`) is done in React.
+
+| Order | Screen | Key UI | Notes |
+|------:|--------|--------|--------|
+| 1 | Risk Radar | Read-only table | Client-side filter; sort by `risk_score` |
+| 2 | Property Structure | Nested accordion | Read-only hierarchy |
+| 3 | Flag Bridge | AG Grid read-only | Row click → unit detail |
+| 4 | Morning Workflow | Dashboard cards + inline date edit | Top actions set board filter + navigate to board |
+| 5 | Operations Schedule | AG Grid editable (manager) / read-only table (vendor) | Batch save for manager |
+| 6 | Add Turnover | Cascading selects | Phase → building → unit |
+| 7 | Export Reports | Prepare + downloads | If prepare is async: poll job status (e.g. React Query interval) |
+| 8 | Import Console | Multi-tab file upload | Poll `import_batch` (or job) status |
+| 9 | Import Reports | Three-tab correction flow | Overrides + invalid data + diagnostics |
+| 10 | Work Order Validator | Upload + classified exports | Align with Streamlit validator tabs |
+| 11 | Admin | Four-tab control plane | DB writes toggle, phase scope, unit master import, app users |
+| 12 | AI Agent | Chat | SSE / `EventSource` for streamed replies |
+
+**Path B route map (React Router)** — mirror Streamlit nav groups:
+
+| Route | Page |
+|-------|------|
+| `/login` | Login |
+| `/board/:propertyId` | Board |
+| `/unit/:turnoverId` | Unit detail |
+| `/schedule/:propertyId` | Operations schedule |
+| `/morning/:propertyId` | Morning workflow |
+| `/flags/:propertyId` | Flag Bridge |
+| `/risk/:propertyId` | Risk Radar |
+| `/import/:propertyId` | Import console |
+| `/import-reports/:propertyId` | Import reports |
+| `/exports/:propertyId` | Export reports |
+| `/validator` | Work order validator |
+| `/admin` | Admin |
+| `/add-turnover/:propertyId` | Add turnover |
+| `/structure/:propertyId` | Property structure |
+| `/ai` | AI agent |
+
+**Path B API prerequisites** (complete or stub before building each row in the table): properties + cascading selects, board + sidebar flags, turnover CRUD + audit, tasks PATCH, notes, schedule batch, morning aggregate, risk rows, export prepare/status/download, import upload/history/correction endpoints, admin writes + users + phase scope + unit master, validator job + download, AI sessions + SSE messages.
 
 Corrected write ownership rule:
 
@@ -362,17 +410,18 @@ Rollback strategy:
 
 Do this only when:
 
-- All 18 screens are verified in FastAPI
+- All Streamlit-parity screens are verified in the chosen frontend (HTMX routes and/or React SPA)
 - `pytest tests/` is green
-- No `proxy_pass http://streamlit` blocks remain in Nginx
+- No `proxy_pass http://streamlit` blocks remain in Nginx (Path A), or Streamlit is not deployed (Path B)
 
 Steps:
 
 1. Remove the Streamlit process from the process manager
 2. Remove `streamlit` and `st.*` imports
-3. Remove the `ui/` directory
-4. Remove Streamlit secret resolution from `config/settings.py`
-5. Run `pytest tests/` again
+3. Archive or remove the `ui/` directory (archive first if you want a reference copy)
+4. **Path B only:** remove `api/routers/pages.py`, `api/templates/`, and HTMX-only static or root Tailwind inputs if superseded by `frontend/`
+5. Remove Streamlit secret resolution from `config/settings.py` where no longer needed
+6. Run `pytest tests/` again
 
 ---
 
@@ -395,9 +444,9 @@ Phase 0 (Prerequisites)
   └─ Phase 1 (Connection Pool)
        └─ Phase 2 (FastAPI + Auth)
             ├─ Phase 3 (Board API)
-            │    └─ Phase 5 (HTMX Board Screen)
-            │         └─ Phase 6 (Remaining Screens)
-            │              └─ Phase 7 (Decommission)
+            │    └─ Phase 5 (Frontend: Path A = HTMX board, Path B = React shell + board)
+            │         └─ Phase 6 (Remaining screens — Path B uses ordered table in §Phase 6)
+            │              └─ Phase 7 (Decommission Streamlit; Path B also removes HTMX/templates)
             └─ Phase 4 (Background Jobs) — requires Phase 0 Redis gate
 ```
 

@@ -9,12 +9,15 @@ from config.settings import SECRET_KEY
 AUTH_COOKIE_NAME = "session"
 
 _PUBLIC_PATHS = frozenset({
+    "/",
     "/login",
     "/logout",
     "/docs",
     "/openapi.json",
     "/api/docs",
     "/api/openapi.json",
+    "/favicon.ico",
+    "/vite.svg",
 })
 
 
@@ -35,7 +38,11 @@ class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
 
-        if path in _PUBLIC_PATHS or path.startswith("/static/"):
+        if (
+            path in _PUBLIC_PATHS
+            or path.startswith("/static/")
+            or path.startswith("/assets/")
+        ):
             return await call_next(request)
 
         cookie = request.cookies.get(AUTH_COOKIE_NAME)
