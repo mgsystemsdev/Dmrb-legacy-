@@ -1,11 +1,11 @@
-"""Tests for QC label logic (ui/helpers/formatting.qc_label).
+"""Tests for QC label logic (api/presentation/formatting.qc_label).
 
 QC Done when all required+blocking tasks are COMPLETED; otherwise QC Not Done.
 """
 
 from __future__ import annotations
 
-from ui.helpers.formatting import qc_label
+from api.presentation.formatting import qc_label
 
 
 def _task(execution_status="NOT_STARTED", required=True, blocking=True, **kw):

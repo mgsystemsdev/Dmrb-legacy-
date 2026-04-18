@@ -11,7 +11,7 @@ from domain.availability_status import (
     MANUAL_READY_VACANT_NOT_READY,
     MANUAL_READY_VACANT_READY,
 )
-from ui.helpers.formatting import status_label
+from api.presentation.formatting import status_label
 
 router = APIRouter()
 

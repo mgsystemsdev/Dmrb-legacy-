@@ -1,6 +1,6 @@
 # DMRB Legacy
 
-**The DMRB (Digital Make Ready Board)** — a Streamlit application for **apartment turnover** operations: board views, task pipelines, CSV imports from property-management reports, exports, optional AI assistance, and work-order validation workflows. Data lives in **PostgreSQL** (no ORM; repositories + raw SQL).
+**The DMRB (Digital Make Ready Board)** — a FastAPI + React application for **apartment turnover** operations: board views, task pipelines, CSV imports from property-management reports, exports, optional AI assistance, and work-order validation workflows. Data lives in **PostgreSQL** (no ORM; repositories + raw SQL).
 
 ## Requirements
 
@@ -15,17 +15,20 @@ source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Set `DATABASE_URL` in the environment or in `.streamlit/secrets.toml` (see `config/settings.py` for all supported keys). Do not commit secrets.
+Set `DATABASE_URL` in the environment (see `config/settings.py` for all supported keys). Do not commit secrets.
 
 ```bash
-streamlit run app.py
+cd frontend && npm install && npm run build
+cd ..
+uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ## Commands
 
 | Action | Command |
 |--------|---------|
-| Run app | `streamlit run app.py` |
+| Build frontend | `cd frontend && npm install && npm run build` |
+| Run app | `uvicorn api.main:app --reload --host 0.0.0.0 --port 8000` |
 | Tests | `pytest tests/` |
 | Midnight automation (scheduled jobs) | `python scripts/run_midnight_automation.py` (optional `--date YYYY-MM-DD`) |
 
@@ -41,9 +44,9 @@ Full table and architecture rules: **[CLAUDE.md](CLAUDE.md)**. Operator-facing f
 
 | Path | Purpose |
 |------|---------|
-| `app.py` | Entrypoint |
-| `ui/screens/` | Streamlit pages |
-| `ui/router.py` | Page dispatch |
+| `api/main.py` | FastAPI entrypoint + SPA host |
+| `frontend/` | React SPA |
+| `ui_archive/` | Archived Streamlit reference code |
 | `services/` | Orchestration and workflows |
 | `db/repository/` | Database access |
 | `domain/` | Pure business logic |

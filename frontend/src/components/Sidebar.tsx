@@ -14,6 +14,13 @@ const navItems = [
   { to: "/admin", label: "Admin" },
 ];
 
+function formatRole(role?: string) {
+  if (!role) return "No role";
+  const normalized = role.toLowerCase().replace(/[_\s-]+/g, " ").trim();
+  if (normalized.includes("admin")) return "Admin";
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+}
+
 export function Sidebar() {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
@@ -27,38 +34,51 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="border-b border-slate-200 bg-ink px-5 py-6 text-white lg:min-h-screen lg:border-b-0 lg:border-r lg:border-slate-800">
+    <aside className="border-b border-border bg-surface px-5 py-6 text-text lg:min-h-screen lg:border-b-0 lg:border-r">
       <div className="mb-8">
-        <p className="text-xs uppercase tracking-[0.28em] text-orange-300">DMRB Legacy</p>
-        <h1 className="mt-2 text-2xl font-semibold">Operations Console</h1>
-        <p className="mt-2 text-sm text-slate-300">
-          React shell for the FastAPI migration.
+        <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-muted">
+          DMRB
         </p>
+        <h1 className="mt-2 text-xl font-semibold tracking-tight text-text-strong">
+          Operations Console
+        </h1>
       </div>
 
-      <nav className="space-y-2">
+      <nav className="space-y-1">
         {navItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              `block rounded-xl px-4 py-3 text-sm transition ${
-                isActive ? "bg-white text-ink shadow-panel" : "text-slate-200 hover:bg-slate-800"
+              `group relative block rounded-md px-3 py-2 text-sm transition ${
+                isActive
+                  ? "bg-surface-3 text-text-strong shadow-hairline"
+                  : "text-muted hover:bg-surface-2 hover:text-text"
               }`
             }
           >
-            {item.label}
+            {({ isActive }) => (
+              <>
+                <span
+                  className={`absolute inset-y-1 left-0 w-[3px] rounded-full transition ${
+                    isActive ? "bg-white" : "bg-transparent"
+                  }`}
+                />
+                <span className="ml-2">{item.label}</span>
+              </>
+            )}
           </NavLink>
         ))}
       </nav>
 
-      <div className="mt-8 rounded-2xl border border-slate-700 bg-slate-900/60 p-4">
-        <p className="text-sm font-medium">{user?.username ?? "Unknown user"}</p>
-        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{user?.role ?? "No role"}</p>
+      <div className="mt-8 rounded-xl border border-border bg-surface-2 p-4 shadow-hairline">
+        <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted">
+          {formatRole(user?.role)}
+        </p>
         <button
           type="button"
           onClick={handleLogout}
-          className="mt-4 w-full rounded-xl border border-slate-600 px-3 py-2 text-sm text-slate-100 transition hover:border-orange-300 hover:text-orange-200"
+          className="btn-ghost mt-4 w-full"
         >
           Sign Out
         </button>

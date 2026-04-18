@@ -9,8 +9,8 @@ export function RequireAuth({ children }: PropsWithChildren) {
 
   if (!hasCheckedAuth) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-mist px-4">
-        <div className="rounded-2xl bg-white px-6 py-4 text-sm text-slate-600 shadow-panel">
+      <div className="flex min-h-screen items-center justify-center bg-canvas px-4">
+        <div className="rounded-xl border border-border bg-surface px-6 py-4 text-sm text-muted shadow-panel">
           Checking session...
         </div>
       </div>

@@ -16,7 +16,7 @@ def main():
     from domain import readiness, sla, turnover_lifecycle
     from domain.priority_engine import derive_priority_from_agreements
     from services import board_service, scope_service
-    from ui.helpers.formatting import qc_label
+    from api.presentation.formatting import qc_label
 
     property_id = 1
     today = date.today()

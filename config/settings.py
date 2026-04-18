@@ -3,14 +3,18 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
+import tomllib
 from typing import Any
 
 
 def _load_streamlit_secrets() -> dict[str, Any]:
     try:
-        import streamlit as st
-
-        return dict(st.secrets)
+        secrets_path = Path(".streamlit/secrets.toml")
+        if not secrets_path.exists():
+            return {}
+        with secrets_path.open("rb") as fh:
+            return tomllib.load(fh)
     except Exception:
         return {}
 

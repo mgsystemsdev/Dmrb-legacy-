@@ -1,16 +1,150 @@
+import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { PageShell } from "../components/PageShell";
+import { MetricGrid } from "../components/MetricGrid";
+import { PropertySelector } from "../components/PropertySelector";
+import { SectionCard } from "../components/SectionCard";
+import { useFlagBridge } from "../api/useOperations";
+import { usePropertyStore } from "../stores/useProperty";
+import { formatDate } from "../lib/utils";
 
 export function FlagBridgePage() {
+  const navigate = useNavigate();
+  const propertyId = usePropertyStore((state) => state.propertyId);
+  const flagBridgeQuery = useFlagBridge(propertyId);
+  const rows = flagBridgeQuery.data?.rows ?? [];
+  const metrics = flagBridgeQuery.data?.metrics;
+  const [phase, setPhase] = useState("All");
+  const [bridge, setBridge] = useState("All");
+  const [value, setValue] = useState("All");
+
+  const phases = useMemo(
+    () =>
+      ["All", ...Array.from(new Set(rows.map((row) => row.unit?.phase_code ?? row.unit?.phase_name ?? "").filter(Boolean))).sort()],
+    [rows],
+  );
+
+  const filtered = useMemo(() => {
+    return rows.filter((row) => {
+      const agreements = row.agreements ?? {};
+      const phaseCode = row.unit?.phase_code ?? row.unit?.phase_name ?? "";
+      const hasBreach = Object.values(agreements).includes("RED");
+      if (phase !== "All" && phaseCode !== phase) {
+        return false;
+      }
+      if (bridge !== "All") {
+        const key =
+          bridge === "Insp Breach"
+            ? "inspection"
+            : bridge === "SLA Breach"
+              ? "sla"
+              : bridge === "SLA MI Breach"
+                ? "move_in"
+                : "plan";
+        if (agreements[key] !== "RED") {
+          return false;
+        }
+      }
+      if (value === "Yes" && !hasBreach) {
+        return false;
+      }
+      if (value === "No" && hasBreach) {
+        return false;
+      }
+      return true;
+    });
+  }, [bridge, phase, rows, value]);
+
   return (
     <PageShell
       title="Flag Bridge"
-      description="Placeholder route for the breach-focused grid. The final screen will replace the Streamlit table with read-only AG Grid plus deep links into turnover detail."
+      description="Units that have missed an SLA, inspection, or move-in target."
+      action={<PropertySelector />}
     >
-      <section className="rounded-[28px] bg-white p-6 shadow-panel">
-        <p className="text-sm text-slate-600">
-          Filters, metrics, and breach categories will land here in Phase 4.
-        </p>
-      </section>
+      <SectionCard title="Filters">
+        <div className="grid gap-4 md:grid-cols-3">
+          <label className="block">
+            <span className="label">Phase</span>
+            <select value={phase} onChange={(event) => setPhase(event.target.value)} className="input">
+              {phases.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="label">Flag Bridge</span>
+            <select value={bridge} onChange={(event) => setBridge(event.target.value)} className="input">
+              {["All", "Insp Breach", "SLA Breach", "SLA MI Breach", "Plan Breach"].map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="label">Value</span>
+            <select value={value} onChange={(event) => setValue(event.target.value)} className="input">
+              {["All", "Yes", "No"].map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </SectionCard>
+
+      <MetricGrid
+        metrics={[
+          { label: "Total Units", value: filtered.length || metrics?.total || 0 },
+          { label: "Violations", value: metrics?.violations ?? 0, tone: "danger" },
+          { label: "Units w/ Breach", value: metrics?.units_with_breach ?? 0, tone: "warning" },
+        ]}
+      />
+
+      <SectionCard title="Breach Table" description="Click any row to jump into turnover detail.">
+        {filtered.length ? (
+          <div className="overflow-hidden rounded-xl border border-border">
+            <table className="min-w-full text-sm">
+              <thead className="bg-surface-2 text-left text-muted">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Unit</th>
+                  <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium">DV</th>
+                  <th className="px-4 py-3 font-medium">Move-In</th>
+                  <th className="px-4 py-3 font-medium">Ready Date</th>
+                  <th className="px-4 py-3 font-medium">Flags</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((row) => {
+                  const flags = Object.entries(row.agreements ?? {})
+                    .filter(([, status]) => status === "RED")
+                    .map(([key]) => key.replace("_", " "));
+                  return (
+                    <tr
+                      key={row.turnover.turnover_id}
+                      className="cursor-pointer border-t border-border transition hover:bg-surface-2"
+                      onClick={() => navigate(`/turnovers/${row.turnover.turnover_id}`)}
+                    >
+                      <td className="px-4 py-3 font-medium text-text-strong">{row.unit?.unit_code_norm ?? "—"}</td>
+                      <td className="px-4 py-3 text-text">{row.turnover.lifecycle_phase}</td>
+                      <td className="px-4 py-3 text-text">{row.turnover.days_since_move_out ?? "—"}</td>
+                      <td className="px-4 py-3 text-text">{formatDate(row.turnover.move_in_date)}</td>
+                      <td className="px-4 py-3 text-text">{formatDate(row.turnover.report_ready_date)}</td>
+                      <td className="px-4 py-3 text-text">{flags.join(", ") || "Clear"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-sm text-muted">No rows match the current Flag Bridge filters.</p>
+        )}
+      </SectionCard>
     </PageShell>
   );
 }

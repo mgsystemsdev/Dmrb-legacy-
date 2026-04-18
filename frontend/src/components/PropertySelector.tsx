@@ -14,12 +14,12 @@ export function PropertySelector() {
   }, [data, propertyId, setPropertyId]);
 
   return (
-    <label className="flex items-center gap-3 text-sm font-medium text-slate-700">
+    <label className="flex items-center gap-3 text-xs font-medium uppercase tracking-[0.16em] text-muted">
       <span>Property</span>
       <select
         value={propertyId ?? ""}
         onChange={(event) => setPropertyId(Number(event.target.value))}
-        className="min-w-56 rounded-xl border border-slate-300 bg-white px-3 py-2 shadow-sm"
+        className="input min-w-56 normal-case tracking-normal"
         disabled={isLoading}
       >
         <option value="" disabled>

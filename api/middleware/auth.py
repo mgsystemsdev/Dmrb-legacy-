@@ -2,9 +2,10 @@ from __future__ import annotations
 import time
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import JSONResponse, RedirectResponse, Response
+from starlette.responses import JSONResponse, Response
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from config.settings import SECRET_KEY
+from services import auth_service
 
 AUTH_COOKIE_NAME = "session"
 
@@ -25,11 +26,6 @@ def _is_htmx(request: Request) -> bool:
     return request.headers.get("HX-Request") == "true"
 
 
-def _is_html_request(request: Request) -> bool:
-    accept = request.headers.get("accept", "")
-    return "text/html" in accept
-
-
 class AuthMiddleware(BaseHTTPMiddleware):
     def __init__(self, app):
         super().__init__(app)
@@ -42,7 +38,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
             path in _PUBLIC_PATHS
             or path.startswith("/static/")
             or path.startswith("/assets/")
+            or not path.startswith("/api/")
         ):
+            return await call_next(request)
+
+        if auth_service.should_auto_auth():
+            request.state.user = auth_service.build_bypass_user()
             return await call_next(request)
 
         cookie = request.cookies.get(AUTH_COOKIE_NAME)
@@ -63,7 +64,4 @@ class AuthMiddleware(BaseHTTPMiddleware):
     def _unauthenticated(request: Request, path: str) -> Response:
         if _is_htmx(request):
             return Response(status_code=401, headers={"HX-Redirect": "/login"})
-        if _is_html_request(request):
-            safe_next = path if path.startswith("/") else "/"
-            return RedirectResponse(url=f"/login?next={safe_next}", status_code=302)
         return JSONResponse(status_code=401, content={"detail": "Not authenticated"})

@@ -3,8 +3,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
   CellValueChangedEvent,
   ColDef,
-  GetRowIdParams,
-  RowClickedEvent,
   ValueFormatterParams,
 } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
@@ -31,16 +29,22 @@ type BoardFilterState = {
   nvm?: string;
   status?: string;
   qc?: string;
+  board_filter?: string;
 };
 
 type TabKey = "info" | "tasks";
+type TaskGridValue = string | number | [number, number] | null | undefined;
+type TaskMutationPayload = {
+  vendor_due_date?: string | null;
+  execution_status?: string | null;
+};
 
 type TaskGridRow = {
   turnover_id: number;
   unit_code: string;
   status: string;
   task_completion: [number, number];
-} & Record<string, string | number | [number, number] | null>;
+} & Record<string, TaskGridValue>;
 
 const NVM_OPTIONS = ["All", "Notice", "Notice + SMI", "Vacant", "Move-In"] as const;
 const QC_OPTIONS = ["All", "Pending", "Confirmed"] as const;
@@ -95,6 +99,7 @@ export function BoardPage() {
       nvm: searchParams.get("nvm") ?? undefined,
       status: searchParams.get("status") ?? undefined,
       qc: searchParams.get("qc") ?? undefined,
+      board_filter: searchParams.get("board_filter") ?? undefined,
     }),
     [searchParams],
   );
@@ -133,7 +138,7 @@ export function BoardPage() {
     }: {
       turnoverId: number;
       taskId: number;
-      payload: Record<string, string | null>;
+      payload: TaskMutationPayload;
     }) => api.patch(`/turnovers/${turnoverId}/tasks/${taskId}`, payload),
     onSuccess: async () => {
       await invalidateBoard();
@@ -386,17 +391,19 @@ export function BoardPage() {
     });
   };
 
-  const onRowClicked = (event: RowClickedEvent<BoardRow | TaskGridRow>) => {
-    const editable = event.column?.getColDef().editable;
-    if (editable) {
+  const onBoardRowClicked = (turnoverId?: number) => {
+    if (!turnoverId) {
       return;
     }
-
-    navigate(`/unit/${event.data?.turnover_id}`);
+    navigate(`/unit/${turnoverId}`);
   };
 
-  const getRowId = (params: GetRowIdParams<BoardRow | TaskGridRow>) =>
-    params.data.turnover_id.toString();
+  const onTaskRowClicked = (turnoverId?: number) => {
+    if (!turnoverId) {
+      return;
+    }
+    navigate(`/unit/${turnoverId}`);
+  };
 
   const phaseOptions = useMemo(() => {
     const phaseSet = new Set((data?.rows ?? []).map((row) => row.phase).filter(Boolean));
@@ -406,26 +413,26 @@ export function BoardPage() {
   return (
     <PageShell
       title="Board"
-      description="Two AG Grid tabs share the same board data, with URL-backed filters and inline mutation wiring."
+      description="Track and update every open turnover across your portfolio."
       action={<PropertySelector />}
     >
-      <section className="rounded-[28px] bg-white p-5 shadow-panel">
+      <section className="card">
         <div className="grid gap-3 md:grid-cols-5">
-          <label className="text-sm font-medium text-slate-700">
-            <span className="mb-2 block">Search</span>
+          <label className="block">
+            <span className="label">Search</span>
             <input
               value={filters.search ?? ""}
               onChange={(event) => updateFilter("search", event.target.value)}
               placeholder="Unit code"
-              className="w-full rounded-xl border border-slate-300 px-3 py-2"
+              className="input"
             />
           </label>
-          <label className="text-sm font-medium text-slate-700">
-            <span className="mb-2 block">Phase</span>
+          <label className="block">
+            <span className="label">Phase</span>
             <select
               value={filters.phase ?? "All"}
               onChange={(event) => updateFilter("phase", event.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2"
+              className="input"
             >
               {phaseOptions.map((option) => (
                 <option key={option} value={option}>
@@ -434,12 +441,12 @@ export function BoardPage() {
               ))}
             </select>
           </label>
-          <label className="text-sm font-medium text-slate-700">
-            <span className="mb-2 block">N/V/M</span>
+          <label className="block">
+            <span className="label">N/V/M</span>
             <select
               value={filters.nvm ?? "All"}
               onChange={(event) => updateFilter("nvm", event.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2"
+              className="input"
             >
               {NVM_OPTIONS.map((option) => (
                 <option key={option} value={option}>
@@ -448,12 +455,12 @@ export function BoardPage() {
               ))}
             </select>
           </label>
-          <label className="text-sm font-medium text-slate-700">
-            <span className="mb-2 block">Status</span>
+          <label className="block">
+            <span className="label">Status</span>
             <select
               value={filters.status ?? "All"}
               onChange={(event) => updateFilter("status", event.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2"
+              className="input"
             >
               <option value="All">All</option>
               {STATUS_OPTIONS.map((option) => (
@@ -463,12 +470,12 @@ export function BoardPage() {
               ))}
             </select>
           </label>
-          <label className="text-sm font-medium text-slate-700">
-            <span className="mb-2 block">QC</span>
+          <label className="block">
+            <span className="label">QC</span>
             <select
               value={filters.qc ?? "All"}
               onChange={(event) => updateFilter("qc", event.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2"
+              className="input"
             >
               {QC_OPTIONS.map((option) => (
                 <option key={option} value={option}>
@@ -480,55 +487,51 @@ export function BoardPage() {
         </div>
       </section>
 
-      <section className="rounded-[28px] bg-white p-5 shadow-panel">
+      <section className="card">
         <div className="mb-4 flex items-center justify-between">
-          <div className="inline-flex rounded-2xl bg-slate-100 p-1">
+          <div className="tab-group">
             <button
               type="button"
               onClick={() => setActiveTab("info")}
-              className={`rounded-xl px-4 py-2 text-sm font-medium ${
-                activeTab === "info" ? "bg-white text-ink shadow-sm" : "text-slate-600"
-              }`}
+              className={`tab-item ${activeTab === "info" ? "tab-item-active" : ""}`}
             >
               Unit Info
             </button>
             <button
               type="button"
               onClick={() => setActiveTab("tasks")}
-              className={`rounded-xl px-4 py-2 text-sm font-medium ${
-                activeTab === "tasks" ? "bg-white text-ink shadow-sm" : "text-slate-600"
-              }`}
+              className={`tab-item ${activeTab === "tasks" ? "tab-item-active" : ""}`}
             >
               Unit Tasks
             </button>
           </div>
-          <p className="text-sm text-slate-500">{data?.total ?? 0} rows</p>
+          <p className="text-sm text-muted">{data?.total ?? 0} rows</p>
         </div>
 
         {activeTab === "info" ? (
-          <div className="ag-theme-quartz h-[620px] w-full">
+          <div className="ag-theme-quartz-dark h-[620px] w-full">
             <AgGridReact<BoardRow>
               rowData={data?.rows ?? []}
               columnDefs={infoColDefs}
               loading={isLoading}
               animateRows
               singleClickEdit
-              getRowId={getRowId}
+              getRowId={(params) => params.data.turnover_id.toString()}
               onCellValueChanged={onTurnoverCellValueChanged}
-              onRowClicked={onRowClicked}
+              onRowClicked={(event) => onBoardRowClicked(event.data?.turnover_id)}
             />
           </div>
         ) : (
-          <div className="ag-theme-quartz h-[620px] w-full">
+          <div className="ag-theme-quartz-dark h-[620px] w-full">
             <AgGridReact<TaskGridRow>
               rowData={taskRowData}
               columnDefs={taskColDefs}
               loading={isLoading}
               animateRows
               singleClickEdit
-              getRowId={getRowId}
+              getRowId={(params) => params.data.turnover_id.toString()}
               onCellValueChanged={onTaskCellValueChanged}
-              onRowClicked={onRowClicked}
+              onRowClicked={(event) => onTaskRowClicked(event.data?.turnover_id)}
             />
           </div>
         )}

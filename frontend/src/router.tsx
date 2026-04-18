@@ -14,7 +14,7 @@ import { TurnoverDetailPage } from "./pages/TurnoverDetailPage";
 
 function AppLayout() {
   return (
-    <div className="min-h-screen bg-mist text-slate-900 lg:grid lg:grid-cols-[280px_minmax(0,1fr)]">
+    <div className="min-h-screen bg-canvas text-text lg:grid lg:grid-cols-[280px_minmax(0,1fr)]">
       <Sidebar />
       <main className="min-w-0">
         <Outlet />

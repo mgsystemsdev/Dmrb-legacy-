@@ -33,32 +33,36 @@ export function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md rounded-[28px] bg-white p-8 shadow-panel">
-        <p className="text-xs uppercase tracking-[0.28em] text-orange-600">DMRB Legacy</p>
-        <h1 className="mt-3 text-3xl font-semibold text-ink">Sign in</h1>
-        <p className="mt-2 text-sm text-slate-600">
-          FastAPI issues the session cookie. Zustand stores the active user profile for the React shell.
+    <div className="flex min-h-screen items-center justify-center bg-canvas px-4 py-10">
+      <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-8 shadow-panel">
+        <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-muted">
+          DMRB
+        </p>
+        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-text-strong">
+          Sign in
+        </h1>
+        <p className="mt-2 text-sm text-muted">
+          Sign in to continue.
         </p>
 
         <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
           <label className="block">
-            <span className="mb-2 block text-sm font-medium text-slate-700">Username</span>
+            <span className="label">Username</span>
             <input
               value={username}
               onChange={(event) => setUsername(event.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2"
+              className="input"
               autoComplete="username"
               required
             />
           </label>
           <label className="block">
-            <span className="mb-2 block text-sm font-medium text-slate-700">Password</span>
+            <span className="label">Password</span>
             <input
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2"
+              className="input"
               autoComplete="current-password"
               required
             />
@@ -66,7 +70,7 @@ export function LoginPage() {
           <button
             type="submit"
             disabled={mutation.isPending}
-            className="w-full rounded-xl bg-ink px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+            className="btn-primary w-full"
           >
             {mutation.isPending ? "Signing in..." : "Sign In"}
           </button>

@@ -21,7 +21,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <App />
-      <Toaster richColors position="top-right" />
+      <Toaster
+        theme="dark"
+        position="top-right"
+        toastOptions={{
+          className:
+            "!bg-surface !text-text !border !border-border shadow-panel",
+        }}
+      />
     </QueryClientProvider>
   </React.StrictMode>,
 );

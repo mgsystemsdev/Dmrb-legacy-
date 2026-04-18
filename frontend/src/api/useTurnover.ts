@@ -8,6 +8,7 @@ export type TurnoverTask = {
   assignee: string | null;
   vendor_due_date: string | null;
   scheduled_date: string | null;
+  manager_confirmed_at: string | null;
   required: boolean;
   blocking: boolean;
   completed_date: string | null;

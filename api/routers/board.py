@@ -5,7 +5,12 @@ from fastapi import APIRouter, Depends, Query
 from api.schemas.board import BoardResponse, BoardRow, BoardTask
 from api.deps import get_current_user
 from services import board_service
-from ui.helpers.formatting import board_breach_row_display, display_status_for_board_item, nvm_label, qc_label
+from api.presentation.formatting import (
+    board_breach_row_display,
+    display_status_for_board_item,
+    nvm_label,
+    qc_label,
+)
 
 router = APIRouter()
 
