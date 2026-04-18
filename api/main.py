@@ -1,8 +1,10 @@
 from __future__ import annotations
 import logging
+import os
 from pathlib import Path
 import time
-from fastapi import FastAPI, Response, HTTPException
+from fastapi import FastAPI, Request, Response, HTTPException
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from itsdangerous import URLSafeTimedSerializer
 from api.middleware.request_id import RequestIDMiddleware
@@ -29,21 +31,110 @@ async def _apply_migrations() -> None:
     """
     from db.migration_runner import ensure_database_ready
 
+    db_url = os.getenv("DATABASE_URL", "")
+    if db_url:
+        # Mask credentials in the log so the URL is identifiable but safe
+        try:
+            from urllib.parse import urlparse
+            parsed = urlparse(db_url)
+            safe_url = f"{parsed.scheme}://***@{parsed.hostname}:{parsed.port}{parsed.path}"
+        except Exception:
+            safe_url = "<unparseable>"
+        logger.info("DATABASE_URL is set — connecting to: %s", safe_url)
+    else:
+        logger.error(
+            "DATABASE_URL is not set — database operations will fail. "
+            "Add the DATABASE_URL environment variable and redeploy."
+        )
+
+    t0 = time.monotonic()
     try:
         ensure_database_ready()
-        logger.info("Database migrations applied successfully")
+        elapsed_ms = (time.monotonic() - t0) * 1000
+        logger.info("Database migrations applied successfully (%.0f ms)", elapsed_ms)
     except Exception as exc:
+        elapsed_ms = (time.monotonic() - t0) * 1000
         logger.error(
-            "Database migration on startup failed (app will start anyway "
-            "so /healthz responds; set DATABASE_URL and redeploy): %s",
+            "Database migration on startup failed after %.0f ms "
+            "(app will start anyway so /healthz responds; "
+            "set DATABASE_URL and redeploy): [%s] %s",
+            elapsed_ms,
+            type(exc).__name__,
             exc,
         )
+
+
+@app.on_event("startup")
+async def _check_frontend_dist() -> None:
+    """Verify the React build directory exists and is non-empty at startup."""
+    frontend_dist = Path("frontend/dist")
+    if not frontend_dist.exists():
+        logger.error(
+            "Frontend dist directory does not exist at '%s' (cwd: %s). "
+            "The SPA will not be served. Run the frontend build step.",
+            frontend_dist.resolve(),
+            Path.cwd(),
+        )
+        return
+
+    files = list(frontend_dist.rglob("*"))
+    html_files = [f for f in files if f.suffix == ".html"]
+    js_files = [f for f in files if f.suffix == ".js"]
+    logger.info(
+        "Frontend dist directory found at '%s': %d total files, "
+        "%d HTML, %d JS",
+        frontend_dist.resolve(),
+        len(files),
+        len(html_files),
+        len(js_files),
+    )
+    index_html = frontend_dist / "index.html"
+    if not index_html.exists():
+        logger.error(
+            "index.html is missing from '%s' — the SPA will not load correctly.",
+            frontend_dist.resolve(),
+        )
+
+
+@app.exception_handler(Exception)
+async def _unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Log details of any unhandled exception so silent failures are visible."""
+    request_id = getattr(request.state, "request_id", "-")
+    logger.error(
+        "Unhandled exception during %s %s (request_id=%s): [%s] %s",
+        request.method,
+        request.url.path,
+        request_id,
+        type(exc).__name__,
+        exc,
+        exc_info=True,
+    )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error", "request_id": request_id},
+    )
 
 
 @app.get("/healthz", tags=["health"])
 async def healthz():
     """Public, unauthenticated liveness probe for Railway health checks."""
     return {"status": "ok"}
+
+
+@app.get("/", tags=["diagnostics"], include_in_schema=False)
+async def root_probe():
+    """Explicit root handler to confirm request routing works end-to-end.
+
+    This route is registered before the StaticFiles SPA mount so it takes
+    priority. It returns a minimal JSON response — if this times out the
+    issue is in the ASGI stack or reverse proxy, not the frontend build.
+    """
+    frontend_dist = Path("frontend/dist")
+    return {
+        "status": "ok",
+        "frontend_dist_exists": frontend_dist.exists(),
+        "index_html_exists": (frontend_dist / "index.html").exists(),
+    }
 
 
 app.add_middleware(RequestIDMiddleware)
@@ -62,10 +153,13 @@ app.include_router(notes.router, prefix="/api", tags=["notes"])
 app.include_router(units.router, prefix="/api", tags=["units"])
 
 frontend_dist = Path("frontend/dist")
-if not frontend_dist.exists():
-    raise RuntimeError("Missing React build at frontend/dist. Run the frontend build before starting FastAPI.")
-
-app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="spa")
+if frontend_dist.exists():
+    app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="spa")
+else:
+    logger.warning(
+        "Skipping StaticFiles mount — frontend/dist not found. "
+        "API routes will still work but the SPA will not be served."
+    )
 
 serializer = URLSafeTimedSerializer(SECRET_KEY)
 AUTH_COOKIE_NAME = "session"
