@@ -1,0 +1,19 @@
+{
+  "run_id": "edf15289-a258-4f11-adfd-2e286e78df10",
+  "plan_id": "swarm_research",
+  "step_id": "s2_research",
+  "goal": "Streamlit UI system analysis and replication strategy for DMRB Legacy app. Extract all UI patterns, design decisions, and structural logic. Deliverables: 7 structured markdown files in /analysis/ui-migration/ covering: UI architecture report, design patterns, Streamlit-to-framework mapping, critical behaviors checklist, UX gaps, frontend recommendation, migration blueprint.",
+  "agent": "research",
+  "prior_summaries": [
+    {
+      "file": "context.output.json",
+      "agent": "context",
+      "outputs_excerpt": "Simulated pass for context. Replace with API execute mode for real output.",
+      "decisions_excerpt": "WebSearch: not available from Python orchestrator; use repo docs + Grep or set DMRB_AGENT_TOOLS=WebSearch=1 if your session has it | WebSearch unavailable → confine to AGENTS.md, CLAUDE.md, memory/, and Grep."
+    }
+  ],
+  "dependency_paths": [
+    "context.output.json"
+  ],
+  "note": "Full prior JSON lives under run_dir at dependency_paths; keep this file under size cap."
+}

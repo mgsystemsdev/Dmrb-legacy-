@@ -1,0 +1,16 @@
+{
+  "fingerprints": {
+    "aabbf997e1685d53": {
+      "run_id": "faa5e3d8-f782-488e-8e05-522d8ba625ba",
+      "step_id": "s1_context"
+    },
+    "6817e3c2247a75b8": {
+      "run_id": "edf15289-a258-4f11-adfd-2e286e78df10",
+      "step_id": "s2_research"
+    },
+    "bd2ce406d3cf1400": {
+      "run_id": "edf15289-a258-4f11-adfd-2e286e78df10",
+      "step_id": "s2_create"
+    }
+  }
+}

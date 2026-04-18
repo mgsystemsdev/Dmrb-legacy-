@@ -1,0 +1,86 @@
+{
+  "run_id": "edf15289-a258-4f11-adfd-2e286e78df10",
+  "plan_id": "swarm_research",
+  "goal": "Streamlit UI system analysis and replication strategy for DMRB Legacy app. Extract all UI patterns, design decisions, and structural logic. Deliverables: 7 structured markdown files in /analysis/ui-migration/ covering: UI architecture report, design patterns, Streamlit-to-framework mapping, critical behaviors checklist, UX gaps, frontend recommendation, migration blueprint.",
+  "mode": "simulate",
+  "schema_version": "2",
+  "created_at": "2026-04-18T02:00:52Z",
+  "steps_completed": [
+    "s1_context",
+    "s2_research",
+    "s2_create",
+    "s3_merge"
+  ],
+  "errors": [],
+  "next_wave": 3,
+  "total_waves": 3,
+  "reuse_outputs": false,
+  "run": {
+    "started_at": "2026-04-18T02:00:52Z",
+    "finished_at": "2026-04-18T02:00:53Z",
+    "total_duration_ms": 134,
+    "status": "completed"
+  },
+  "steps": {
+    "s1_context": {
+      "status": "success",
+      "input_hash": "77b1c4ee169be53e1435b6d994496e636bb10620d5148fee2aeda60f317d7a8c",
+      "duration_ms": 0,
+      "retries": 0,
+      "token_usage": {
+        "input": 0,
+        "output": 0
+      }
+    },
+    "s2_research": {
+      "status": "success",
+      "input_hash": "8d4a6770858de96aed9cbbb454bc33fc87c7c5fbfcd09c6850724617f9563fea",
+      "duration_ms": 0,
+      "retries": 0,
+      "token_usage": {
+        "input": 0,
+        "output": 0
+      }
+    },
+    "s2_create": {
+      "status": "success",
+      "input_hash": "48d29d9b21afda2d19c3351a0d68844d90dc68caf512b63dc4c0c51d3e59bb0a",
+      "duration_ms": 0,
+      "retries": 0,
+      "token_usage": {
+        "input": 0,
+        "output": 0
+      }
+    },
+    "s3_merge": {
+      "status": "success",
+      "duration_ms": 0,
+      "retries": 0
+    }
+  },
+  "goal_template": "Streamlit UI system analysis and replication strategy for DMRB Legacy app. Extract all UI patterns, design decisions, and structural logic. Deliverables: 7 structured markdown files in /analysis/ui-migration/ covering: UI architecture report, design patterns, Streamlit-to-framework mapping, critical behaviors checklist, UX gaps, frontend recommendation, migration blueprint.",
+  "wave_log": [
+    {
+      "parallel_groups": {
+        "1": [
+          "s1_context"
+        ]
+      }
+    },
+    {
+      "parallel_groups": {
+        "2": [
+          "s2_research",
+          "s2_create"
+        ]
+      }
+    },
+    {
+      "parallel_groups": {
+        "3": [
+          "s3_merge"
+        ]
+      }
+    }
+  ]
+}

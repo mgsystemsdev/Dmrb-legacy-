@@ -1,0 +1,48 @@
+{% for row in rows %}
+<tr class="border-b border-gray-100 hover:bg-gray-50 {{ row.priority_row_css }}">
+  <!-- Unit -->
+  <td class="px-3 py-2 font-mono font-medium text-gray-900">{{ row.unit_code }}</td>
+
+  <!-- Phase -->
+  <td class="px-3 py-2 text-gray-600 whitespace-nowrap">{{ row.phase }}</td>
+
+  <!-- Status -->
+  <td class="px-3 py-2 text-gray-700 whitespace-nowrap">{{ row.status }}</td>
+
+  <!-- Readiness badge -->
+  <td class="px-3 py-2">
+    <span class="{{ row.readiness_css }}">{{ row.readiness_label }}</span>
+  </td>
+
+  <!-- DV -->
+  <td class="px-3 py-2 text-right tabular-nums {% if row.dv and row.dv > 10 %}text-red-600 font-semibold{% else %}text-gray-600{% endif %}">
+    {% if row.dv is not none %}{{ row.dv }}d{% else %}—{% endif %}
+  </td>
+
+  <!-- DTBR -->
+  <td class="px-3 py-2 text-right tabular-nums text-gray-600">
+    {% if row.dtbr is not none %}{{ row.dtbr }}d{% else %}—{% endif %}
+  </td>
+
+  <!-- Move-In -->
+  <td class="px-3 py-2 text-gray-600 whitespace-nowrap">{{ row.move_in_date }}</td>
+
+  <!-- Tasks X/Y -->
+  <td class="px-3 py-2 text-center tabular-nums text-gray-600">
+    {% if row.tasks_total > 0 %}
+      <span class="{% if row.tasks_done == row.tasks_total %}text-green-600{% endif %}">
+        {{ row.tasks_done }}/{{ row.tasks_total }}
+      </span>
+    {% else %}
+      <span class="text-gray-300">—</span>
+    {% endif %}
+  </td>
+
+  <!-- Alert -->
+  <td class="px-3 py-2 text-gray-700 whitespace-nowrap text-xs">{{ row.alert }}</td>
+</tr>
+{% else %}
+<tr>
+  <td colspan="9" class="px-3 py-8 text-center text-sm text-gray-400">No units match the current filters.</td>
+</tr>
+{% endfor %}

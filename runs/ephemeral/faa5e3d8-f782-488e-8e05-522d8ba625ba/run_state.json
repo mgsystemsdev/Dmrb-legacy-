@@ -1,0 +1,49 @@
+{
+  "run_id": "faa5e3d8-f782-488e-8e05-522d8ba625ba",
+  "plan_id": "swarm_research",
+  "goal": "Streamlit UI system analysis and replication strategy for DMRB Legacy app. Extract all UI patterns, design decisions, and structural logic. Deliverables: 7 structured markdown files in /analysis/ui-migration/ covering: UI architecture report, design patterns, Streamlit-to-framework mapping, critical behaviors checklist, UX gaps, frontend recommendation, migration blueprint.",
+  "mode": "execute",
+  "schema_version": "2",
+  "created_at": "2026-04-18T02:01:01Z",
+  "steps_completed": [
+    "s1_context"
+  ],
+  "errors": [
+    {
+      "step_id": "s1_context",
+      "error": "ANTHROPIC_API_KEY is not set"
+    }
+  ],
+  "next_wave": 0,
+  "total_waves": 3,
+  "reuse_outputs": false,
+  "run": {
+    "started_at": "2026-04-18T02:01:01Z",
+    "finished_at": "2026-04-18T02:01:01Z",
+    "total_duration_ms": 57,
+    "status": "failed"
+  },
+  "steps": {
+    "s1_context": {
+      "status": "failure",
+      "input_hash": "6a7362432ad35f8ffc924d66b6bd267495b3592bce0b5019a59ac960d4a52562",
+      "duration_ms": 0,
+      "retries": 1,
+      "token_usage": {
+        "input": 0,
+        "output": 0
+      }
+    }
+  },
+  "goal_template": "Streamlit UI system analysis and replication strategy for DMRB Legacy app. Extract all UI patterns, design decisions, and structural logic. Deliverables: 7 structured markdown files in /analysis/ui-migration/ covering: UI architecture report, design patterns, Streamlit-to-framework mapping, critical behaviors checklist, UX gaps, frontend recommendation, migration blueprint.",
+  "wave_log": [
+    {
+      "parallel_groups": {
+        "1": [
+          "s1_context"
+        ]
+      }
+    }
+  ],
+  "abort_reason": "critical step s1_context failed: ANTHROPIC_API_KEY is not set"
+}
