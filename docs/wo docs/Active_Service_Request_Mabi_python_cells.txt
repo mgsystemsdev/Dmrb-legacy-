@@ -1,0 +1,1425 @@
+================================================================================
+ENVIRONMENT INITIALIZATION (runs before Python cells)
+================================================================================
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import statsmodels as sm
+import excel
+import warnings
+
+warnings.simplefilter('ignore')
+
+excel.set_xl_scalar_conversion(excel.convert_to_scalar)
+excel.set_xl_array_conversion(excel.convert_to_dataframe)
+
+================================================================================
+PYTHON CELL SCRIPT #1
+================================================================================
+df = xl(%P2%)
+
+phase_col = df.iloc[:, 0].astype(str).str.strip()
+
+allowed_phases = ["3", "4", "4c"]
+
+phase_mask = phase_col.isin(allowed_phases)
+
+
+final_mask = phase_mask 
+
+df_view = df.loc[final_mask, [4, 9, 2, 8,11]]
+
+df_view.columns = [
+    "Unit",
+    "Assigned to",
+    "Days open",
+    "Issue",
+    "Status"
+]
+
+
+df_view = df_view.sort_values(
+    by="Days open",
+    ascending=False
+)
+
+
+df_view = df_view.reset_index(drop=True)
+
+df_view
+
+================================================================================
+PYTHON CELL SCRIPT #2
+================================================================================
+df = xl(%P2%)
+
+# --------------------
+# filters (CONTROL TILE)
+# --------------------
+
+# normalize Phase (force numeric)
+phase_col = df.iloc[:, 0].astype(str).str.strip()
+allowed_phases = ["3", "4", "4c"]
+phase_mask = phase_col.isin(allowed_phases)
+
+# normalize Assigned
+assigned_col = df.iloc[:, 9].fillna("").astype(str).str.strip()
+allowed_assigned = ["Unassigned", ""]
+assigned_mask = assigned_col.isin(allowed_assigned)
+
+# combined filter
+final_mask = phase_mask & assigned_mask
+
+# --------------------
+# select columns
+# --------------------
+
+df_view = df.loc[final_mask, [4, 9, 2, 8,11]]
+
+df_view.columns = [
+    "Unit",
+    "Assigned to",
+    "Days open",
+    "Issue",
+    "Status"
+]
+
+# --------------------
+# sort
+# --------------------
+
+df_view = df_view.sort_values(
+    by="Days open",
+    ascending=False
+)
+
+# --------------------
+# cleanup
+# --------------------
+
+df_view = df_view.reset_index(drop=True)
+
+df_view
+
+================================================================================
+PYTHON CELL SCRIPT #3
+================================================================================
+df = xl(%P2%)
+
+# --------------------
+# filters (CONTROL TILE)
+# --------------------
+
+# normalize Phase (force numeric)
+phase_col = df.iloc[:, 0].astype(str).str.strip()
+allowed_phases = ["3"]
+phase_mask = phase_col.isin(allowed_phases)
+
+# normalize Assigned
+assigned_col = df.iloc[:, 9].fillna("").astype(str).str.strip()
+allowed_assigned = ["Unassigned", ""]
+assigned_mask = assigned_col.isin(allowed_assigned)
+
+# combined filter
+final_mask = phase_mask & assigned_mask
+
+# --------------------
+# select columns
+# --------------------
+
+df_view = df.loc[final_mask, [4, 9, 2, 8,11]]
+
+df_view.columns = [
+    "Unit",
+    "Assigned to",
+    "Days open",
+    "Issue",
+    "Status"
+]
+
+# --------------------
+# sort
+# --------------------
+
+df_view = df_view.sort_values(
+    by="Days open",
+    ascending=False
+)
+
+# --------------------
+# cleanup
+# --------------------
+
+df_view = df_view.reset_index(drop=True)
+
+df_view
+
+================================================================================
+PYTHON CELL SCRIPT #4
+================================================================================
+df = xl(%P2%)
+
+# --------------------
+# filters (CONTROL TILE)
+# --------------------
+
+# normalize Phase (force numeric)
+phase_col = df.iloc[:, 0].astype(str).str.strip()
+allowed_phases = [ "4"]
+phase_mask = phase_col.isin(allowed_phases)
+
+# normalize Assigned
+assigned_col = df.iloc[:, 9].fillna("").astype(str).str.strip()
+allowed_assigned = ["Unassigned", ""]
+assigned_mask = assigned_col.isin(allowed_assigned)
+
+# combined filter
+final_mask = phase_mask & assigned_mask
+
+# --------------------
+# select columns
+# --------------------
+
+df_view = df.loc[final_mask, [4, 9, 2, 8,11]]
+
+df_view.columns = [
+    "Unit",
+    "Assigned to",
+    "Days open",
+    "Issue",
+    "Status"
+]
+
+# --------------------
+# sort
+# --------------------
+
+df_view = df_view.sort_values(
+    by="Days open",
+    ascending=False
+)
+
+# --------------------
+# cleanup
+# --------------------
+
+df_view = df_view.reset_index(drop=True)
+
+df_view
+
+================================================================================
+PYTHON CELL SCRIPT #5
+================================================================================
+df = xl(%P2%)
+
+# --------------------
+# filters (CONTROL TILE)
+# --------------------
+
+# normalize Phase (force numeric)
+phase_col = df.iloc[:, 0].astype(str).str.strip()
+allowed_phases = [ "4c"]
+phase_mask = phase_col.isin(allowed_phases)
+
+# normalize Assigned
+assigned_col = df.iloc[:, 9].fillna("").astype(str).str.strip()
+allowed_assigned = ["Unassigned", ""]
+assigned_mask = assigned_col.isin(allowed_assigned)
+
+# combined filter
+final_mask = phase_mask & assigned_mask
+
+# --------------------
+# select columns
+# --------------------
+
+df_view = df.loc[final_mask, [4, 9, 2, 8,11]]
+
+df_view.columns = [
+    "Unit",
+    "Assigned to",
+    "Days open",
+    "Issue",
+    "Status"
+]
+
+# --------------------
+# sort
+# --------------------
+
+df_view = df_view.sort_values(
+    by="Days open",
+    ascending=False
+)
+
+# --------------------
+# cleanup
+# --------------------
+
+df_view = df_view.reset_index(drop=True)
+
+df_view
+
+================================================================================
+PYTHON CELL SCRIPT #6
+================================================================================
+df = xl(%P2%)
+
+# select columns by index positions
+df_view = df.iloc[:, [4, 9, 2, 8,11]]
+
+# rename selected columns
+df_view.columns = [
+    "Unit",
+    "Assigned to",
+    "Days open",
+    "Issue",
+    "Status"
+]
+
+# filter: only Unassigned
+df_view = df_view[df_view["Assigned to"] == "Mabi"]
+
+# sort by Days open (descending)
+df_view = df_view.sort_values(by="Days open", ascending=False)
+
+# reset index after filtering & sorting
+df_view = df_view.reset_index(drop=True)
+
+# display result
+df_view
+
+================================================================================
+PYTHON CELL SCRIPT #7
+================================================================================
+df = xl(%P2%)
+
+# --------------------
+# filters (CONTROL TILE)
+# --------------------
+
+# Assigned filter
+allowed_assigned = ["Dennis Arevalo"]
+assigned_col = df.iloc[:, 9].fillna("").astype(str).str.strip()
+assigned_mask = assigned_col.isin(allowed_assigned)
+
+# Status filter
+allowed_status = ["In progress"]
+status_col = df.iloc[:, 11].fillna("").astype(str).str.strip()
+status_mask = status_col.isin(allowed_status)
+
+# combine filters
+final_mask = assigned_mask & status_mask
+
+# --------------------
+# select columns
+# --------------------
+
+df_view = df.loc[final_mask, [4, 9, 2, 8, 11]]
+
+df_view.columns = [
+    "Unit",
+    "Assigned to",
+    "Days open",
+    "Issue",
+    "Status"
+]
+
+# --------------------
+# sort
+# --------------------
+
+df_view = df_view.sort_values(
+    by="Days open",
+    ascending=False
+)
+
+# --------------------
+# cleanup
+# --------------------
+
+df_view = df_view.reset_index(drop=True)
+
+df_view
+
+================================================================================
+PYTHON CELL SCRIPT #8
+================================================================================
+df = xl(%P2%)
+
+# --------------------
+# filters (CONTROL TILE)
+# --------------------
+
+# Assigned filter
+allowed_assigned = ["Rayniel Rincon"]
+assigned_col = df.iloc[:, 9].fillna("").astype(str).str.strip()
+assigned_mask = assigned_col.isin(allowed_assigned)
+
+# Status filter
+allowed_status = ["In progress"]
+status_col = df.iloc[:, 11].fillna("").astype(str).str.strip()
+status_mask = status_col.isin(allowed_status)
+
+# combine filters
+final_mask = assigned_mask & status_mask
+
+# --------------------
+# select columns
+# --------------------
+
+df_view = df.loc[final_mask, [4, 9, 2, 8, 11]]
+
+df_view.columns = [
+    "Unit",
+    "Assigned to",
+    "Days open",
+    "Issue",
+    "Status"
+]
+
+# --------------------
+# sort
+# --------------------
+
+df_view = df_view.sort_values(
+    by="Days open",
+    ascending=False
+)
+
+# --------------------
+# cleanup
+# --------------------
+
+df_view = df_view.reset_index(drop=True)
+
+df_view
+
+================================================================================
+PYTHON CELL SCRIPT #9
+================================================================================
+df = xl(%P2%)
+
+# --------------------
+# filters (CONTROL TILE)
+# --------------------
+
+# Assigned filter
+allowed_assigned = ["Alexander Gonzalez"]
+assigned_col = df.iloc[:, 9].fillna("").astype(str).str.strip()
+assigned_mask = assigned_col.isin(allowed_assigned)
+
+# Status filter
+allowed_status = ["In progress"]
+status_col = df.iloc[:, 11].fillna("").astype(str).str.strip()
+status_mask = status_col.isin(allowed_status)
+
+# combine filters
+final_mask = assigned_mask & status_mask
+
+# --------------------
+# select columns
+# --------------------
+
+df_view = df.loc[final_mask, [4, 9, 2, 8, 11]]
+
+df_view.columns = [
+    "Unit",
+    "Assigned to",
+    "Days open",
+    "Issue",
+    "Status"
+]
+
+# --------------------
+# sort
+# --------------------
+
+df_view = df_view.sort_values(
+    by="Days open",
+    ascending=False
+)
+
+# --------------------
+# cleanup
+# --------------------
+
+df_view = df_view.reset_index(drop=True)
+
+df_view
+
+================================================================================
+PYTHON CELL SCRIPT #10
+================================================================================
+df = xl(%P2%)
+
+# --------------------
+# filters (CONTROL TILE)
+# --------------------
+
+# Assigned filter
+allowed_assigned = ["Diego Zapata"]
+assigned_col = df.iloc[:, 9].fillna("").astype(str).str.strip()
+assigned_mask = assigned_col.isin(allowed_assigned)
+
+# Status filter
+allowed_status = ["In progress"]
+status_col = df.iloc[:, 11].fillna("").astype(str).str.strip()
+status_mask = status_col.isin(allowed_status)
+
+# combine filters
+final_mask = assigned_mask & status_mask
+
+# --------------------
+# select columns
+# --------------------
+
+df_view = df.loc[final_mask, [4, 9, 2, 8, 11]]
+
+df_view.columns = [
+    "Unit",
+    "Assigned to",
+    "Days open",
+    "Issue",
+    "Status"
+]
+
+# --------------------
+# sort
+# --------------------
+
+df_view = df_view.sort_values(
+    by="Days open",
+    ascending=False
+)
+
+# --------------------
+# cleanup
+# --------------------
+
+df_view = df_view.reset_index(drop=True)
+
+df_view
+
+================================================================================
+PYTHON CELL SCRIPT #11
+================================================================================
+df = xl(%P2%)
+
+# --------------------
+# filters (CONTROL TILE)
+# --------------------
+
+# Assigned filter
+allowed_assigned = ["Victor Castaneda"]
+assigned_col = df.iloc[:, 9].fillna("").astype(str).str.strip()
+assigned_mask = assigned_col.isin(allowed_assigned)
+
+# Status filter
+allowed_status = ["In progress"]
+status_col = df.iloc[:, 11].fillna("").astype(str).str.strip()
+status_mask = status_col.isin(allowed_status)
+
+# combine filters
+final_mask = assigned_mask & status_mask
+
+# --------------------
+# select columns
+# --------------------
+
+df_view = df.loc[final_mask, [4, 9, 2, 8, 11]]
+
+df_view.columns = [
+    "Unit",
+    "Assigned to",
+    "Days open",
+    "Issue",
+    "Status"
+]
+
+# --------------------
+# sort
+# --------------------
+
+df_view = df_view.sort_values(
+    by="Days open",
+    ascending=False
+)
+
+# --------------------
+# cleanup
+# --------------------
+
+df_view = df_view.reset_index(drop=True)
+
+df_view
+
+================================================================================
+PYTHON CELL SCRIPT #12
+================================================================================
+df = xl(%P2%)
+
+# --------------------
+# filters (CONTROL TILE)
+# --------------------
+
+# normalize Phase (force numeric)
+phase_col = df.iloc[:, 0].astype(str).str.strip()
+allowed_phases = ["4"]
+phase_mask = phase_col.isin(allowed_phases)
+
+# normalize Assigned
+assigned_col = df.iloc[:, 9].fillna("").astype(str).str.strip()
+allowed_assigned = ["Unassigned", ""]
+assigned_mask = assigned_col.isin(allowed_assigned)
+
+# combined filter
+final_mask = phase_mask & assigned_mask
+
+# --------------------
+# select columns
+# --------------------
+
+df_view = df.loc[final_mask, [4, 9, 2, 8,11]]
+
+df_view.columns = [
+    "Unit",
+    "Assigned to",
+    "Days open",
+    "Issue",
+    "Status"
+]
+
+# --------------------
+# sort
+# --------------------
+
+df_view = df_view.sort_values(
+    by="Days open",
+    ascending=False
+)
+
+# --------------------
+# cleanup
+# --------------------
+
+df_view = df_view.reset_index(drop=True)
+
+df_view
+
+================================================================================
+PYTHON CELL SCRIPT #13
+================================================================================
+df = xl(%P2%)
+
+# --------------------
+# filters (CONTROL TILE)
+# --------------------
+
+# normalize Phase (force numeric)
+phase_col = df.iloc[:, 0].astype(str).str.strip()
+allowed_phases = ["4c"]
+phase_mask = phase_col.isin(allowed_phases)
+
+# normalize Assigned
+assigned_col = df.iloc[:, 9].fillna("").astype(str).str.strip()
+allowed_assigned = ["Unassigned", ""]
+assigned_mask = assigned_col.isin(allowed_assigned)
+
+# combined filter
+final_mask = phase_mask & assigned_mask
+
+# --------------------
+# select columns
+# --------------------
+
+df_view = df.loc[final_mask, [4, 9, 2, 8,11]]
+
+df_view.columns = [
+    "Unit",
+    "Assigned to",
+    "Days open",
+    "Issue",
+    "Status"
+]
+
+# --------------------
+# sort
+# --------------------
+
+df_view = df_view.sort_values(
+    by="Days open",
+    ascending=False
+)
+
+# --------------------
+# cleanup
+# --------------------
+
+df_view = df_view.reset_index(drop=True)
+
+df_view
+
+================================================================================
+PYTHON CELL SCRIPT #14
+================================================================================
+df = xl(%P2%)
+
+# --------------------
+# filters (CONTROL TILE)
+# --------------------
+
+# Assigned filter
+allowed_assigned = ["Alexander Gonzalez"]
+assigned_col = df.iloc[:, 9].fillna("").astype(str).str.strip()
+assigned_mask = assigned_col.isin(allowed_assigned)
+
+# Status filter
+allowed_status = ["On hold"]
+status_col = df.iloc[:, 11].fillna("").astype(str).str.strip()
+status_mask = status_col.isin(allowed_status)
+
+# combine filters
+final_mask = assigned_mask & status_mask
+
+# --------------------
+# select columns
+# --------------------
+
+df_view = df.loc[final_mask, [4, 9, 2, 8, 11]]
+
+df_view.columns = [
+    "Unit",
+    "Assigned to",
+    "Days open",
+    "Issue",
+    "Status"
+]
+
+# --------------------
+# sort
+# --------------------
+
+df_view = df_view.sort_values(
+    by="Days open",
+    ascending=False
+)
+
+# --------------------
+# cleanup
+# --------------------
+
+df_view = df_view.reset_index(drop=True)
+
+df_view
+
+================================================================================
+PYTHON CELL SCRIPT #15
+================================================================================
+df = xl(%P2%)
+
+allowed_assigned = ["Unassigned"]
+assigned_col = df.iloc[:, 9].fillna("").astype(str).str.strip()
+assigned_mask = assigned_col.isin(allowed_assigned)
+
+phase_col = df.iloc[:, 0].astype(str).str.strip()
+allowed_phases = ["3"]
+phase_mask = phase_col.isin(allowed_phases)
+
+final_mask = assigned_mask &  phase_mask
+
+
+df_view = df.loc[final_mask, [4, 9, 2, 8, 11]]
+df_view.columns = [
+    "Unit",
+    "Assigned to",
+    "Days open",
+    "Issue",
+    "Status"
+]
+df_view = df_view.sort_values(
+    by="Days open",
+    ascending=False
+)
+df_view = df_view.reset_index(drop=True)
+df_view
+
+================================================================================
+PYTHON CELL SCRIPT #16
+================================================================================
+df = xl(%P2%)
+
+# --------------------
+# filters (CONTROL TILE)
+# --------------------
+
+# Assigned filter
+allowed_assigned = ["Victor Castaneda"]
+assigned_col = df.iloc[:, 9].fillna("").astype(str).str.strip()
+assigned_mask = assigned_col.isin(allowed_assigned)
+
+# Status filter
+allowed_status = ["In progress"]
+status_col = df.iloc[:, 11].fillna("").astype(str).str.strip()
+status_mask = status_col.isin(allowed_status)
+
+phase_col = df.iloc[:, 0].astype(str).str.strip()
+allowed_phases = ["3"]
+phase_mask = phase_col.isin(allowed_phases)
+
+# combine filters
+final_mask = assigned_mask & status_mask & phase_mask 
+
+# --------------------
+# select columns
+# --------------------
+
+df_view = df.loc[final_mask, [4, 9, 2, 8, 11]]
+
+df_view.columns = [
+    "Unit",
+    "Assigned to",
+    "Days open",
+    "Issue",
+    "Status"
+]
+
+# --------------------
+# sort
+# --------------------
+
+df_view = df_view.sort_values(
+    by="Days open",
+    ascending=False
+)
+
+# --------------------
+# cleanup
+# --------------------
+
+df_view = df_view.reset_index(drop=True)
+
+df_view
+
+================================================================================
+PYTHON CELL SCRIPT #17
+================================================================================
+df = xl(%P2%)
+
+# --------------------
+# filters (CONTROL TILE)
+# --------------------
+
+# Assigned filter
+allowed_assigned = ["Victor Castaneda"]
+assigned_col = df.iloc[:, 9].fillna("").astype(str).str.strip()
+assigned_mask = assigned_col.isin(allowed_assigned)
+
+# Status filter
+allowed_status = ["On hold"]
+status_col = df.iloc[:, 11].fillna("").astype(str).str.strip()
+status_mask = status_col.isin(allowed_status)
+
+phase_col = df.iloc[:, 0].astype(str).str.strip()
+allowed_phases = ["3"]
+phase_mask = phase_col.isin(allowed_phases)
+
+# combine filters
+final_mask = assigned_mask & status_mask & phase_mask 
+# --------------------
+# select columns
+# --------------------
+
+df_view = df.loc[final_mask, [4, 9, 2, 8, 11]]
+
+df_view.columns = [
+    "Unit",
+    "Assigned to",
+    "Days open",
+    "Issue",
+    "Status"
+]
+
+# --------------------
+# sort
+# --------------------
+
+df_view = df_view.sort_values(
+    by="Days open",
+    ascending=False
+)
+
+# --------------------
+# cleanup
+# --------------------
+
+df_view = df_view.reset_index(drop=True)
+
+df_view
+
+================================================================================
+PYTHON CELL SCRIPT #18
+================================================================================
+df = xl(%P2%)
+
+# --------------------
+# filters (CONTROL TILE)
+# --------------------
+
+# Assigned filter
+allowed_assigned = ["Dennis Arevalo"]
+assigned_col = df.iloc[:, 9].fillna("").astype(str).str.strip()
+assigned_mask = assigned_col.isin(allowed_assigned)
+
+# Status filter
+allowed_status = ["In progress"]
+status_col = df.iloc[:, 11].fillna("").astype(str).str.strip()
+status_mask = status_col.isin(allowed_status)
+
+phase_col = df.iloc[:, 0].astype(str).str.strip()
+allowed_phases = ["3"]
+phase_mask = phase_col.isin(allowed_phases)
+
+# combine filters
+final_mask = assigned_mask & status_mask & phase_mask 
+
+# --------------------
+# select columns
+# --------------------
+
+df_view = df.loc[final_mask, [4, 9, 2, 8, 11]]
+
+df_view.columns = [
+    "Unit",
+    "Assigned to",
+    "Days open",
+    "Issue",
+    "Status"
+]
+
+# --------------------
+# sort
+# --------------------
+
+df_view = df_view.sort_values(
+    by="Days open",
+    ascending=False
+)
+
+# --------------------
+# cleanup
+# --------------------
+
+df_view = df_view.reset_index(drop=True)
+
+df_view
+
+================================================================================
+PYTHON CELL SCRIPT #19
+================================================================================
+df = xl(%P2%)
+
+# --------------------
+# filters (CONTROL TILE)
+# --------------------
+
+# Assigned filter
+allowed_assigned = ["Dennis Arevalo"]
+assigned_col = df.iloc[:, 9].fillna("").astype(str).str.strip()
+assigned_mask = assigned_col.isin(allowed_assigned)
+
+# Status filter
+allowed_status = ["On hold"]
+status_col = df.iloc[:, 11].fillna("").astype(str).str.strip()
+status_mask = status_col.isin(allowed_status)
+
+phase_col = df.iloc[:, 0].astype(str).str.strip()
+allowed_phases = ["3"]
+phase_mask = phase_col.isin(allowed_phases)
+
+# combine filters
+final_mask = assigned_mask & status_mask & phase_mask 
+# --------------------
+# select columns
+# --------------------
+
+df_view = df.loc[final_mask, [4, 9, 2, 8, 11]]
+
+df_view.columns = [
+    "Unit",
+    "Assigned to",
+    "Days open",
+    "Issue",
+    "Status"
+]
+
+# --------------------
+# sort
+# --------------------
+
+df_view = df_view.sort_values(
+    by="Days open",
+    ascending=False
+)
+
+# --------------------
+# cleanup
+# --------------------
+
+df_view = df_view.reset_index(drop=True)
+
+df_view
+
+================================================================================
+PYTHON CELL SCRIPT #20
+================================================================================
+df = xl(%P2%)
+
+# --------------------
+# filters (CONTROL TILE)
+# --------------------
+
+# Assigned filter
+allowed_assigned = ["Rayniel Rincon"]
+assigned_col = df.iloc[:, 9].fillna("").astype(str).str.strip()
+assigned_mask = assigned_col.isin(allowed_assigned)
+
+# Status filter
+allowed_status = ["On hold"]
+status_col = df.iloc[:, 11].fillna("").astype(str).str.strip()
+status_mask = status_col.isin(allowed_status)
+
+# combine filters
+final_mask = assigned_mask & status_mask
+
+# --------------------
+# select columns
+# --------------------
+
+df_view = df.loc[final_mask, [4, 9, 2, 8, 11]]
+
+df_view.columns = [
+    "Unit",
+    "Assigned to",
+    "Days open",
+    "Issue",
+    "Status"
+]
+
+# --------------------
+# sort
+# --------------------
+
+df_view = df_view.sort_values(
+    by="Days open",
+    ascending=False
+)
+
+# --------------------
+# cleanup
+# --------------------
+
+df_view = df_view.reset_index(drop=True)
+
+df_view
+
+================================================================================
+PYTHON CELL SCRIPT #21
+================================================================================
+df = xl(%P2%)
+
+allowed_assigned = ["Unassigned"]
+assigned_col = df.iloc[:, 9].fillna("").astype(str).str.strip()
+assigned_mask = assigned_col.isin(allowed_assigned)
+
+phase_col = df.iloc[:, 0].astype(str).str.strip()
+allowed_phases = ["4"]
+phase_mask = phase_col.isin(allowed_phases)
+
+final_mask = assigned_mask &  phase_mask
+
+
+df_view = df.loc[final_mask, [4, 9, 2, 8, 11]]
+df_view.columns = [
+    "Unit",
+    "Assigned to",
+    "Days open",
+    "Issue",
+    "Status"
+]
+df_view = df_view.sort_values(
+    by="Days open",
+    ascending=False
+)
+df_view = df_view.reset_index(drop=True)
+df_view
+
+================================================================================
+PYTHON CELL SCRIPT #22
+================================================================================
+df = xl(%P2%)
+
+# --------------------
+# filters (CONTROL TILE)
+# --------------------
+
+# Assigned filter
+allowed_assigned = ["Diego Zapata"]
+assigned_col = df.iloc[:, 9].fillna("").astype(str).str.strip()
+assigned_mask = assigned_col.isin(allowed_assigned)
+
+# Status filter
+allowed_status = ["In progress"]
+status_col = df.iloc[:, 11].fillna("").astype(str).str.strip()
+status_mask = status_col.isin(allowed_status)
+
+phase_col = df.iloc[:, 0].astype(str).str.strip()
+allowed_phases = ["4"]
+phase_mask = phase_col.isin(allowed_phases)
+
+# combine filters
+final_mask = assigned_mask & status_mask & phase_mask 
+
+# --------------------
+# select columns
+# --------------------
+
+df_view = df.loc[final_mask, [4, 9, 2, 8, 11]]
+
+df_view.columns = [
+    "Unit",
+    "Assigned to",
+    "Days open",
+    "Issue",
+    "Status"
+]
+
+# --------------------
+# sort
+# --------------------
+
+df_view = df_view.sort_values(
+    by="Days open",
+    ascending=False
+)
+
+# --------------------
+# cleanup
+# --------------------
+
+df_view = df_view.reset_index(drop=True)
+
+df_view
+
+================================================================================
+PYTHON CELL SCRIPT #23
+================================================================================
+df = xl(%P2%)
+
+# --------------------
+# filters (CONTROL TILE)
+# --------------------
+
+# Assigned filter
+allowed_assigned = ["Diego Zapata"]
+assigned_col = df.iloc[:, 9].fillna("").astype(str).str.strip()
+assigned_mask = assigned_col.isin(allowed_assigned)
+
+# Status filter
+allowed_status = ["On hold"]
+status_col = df.iloc[:, 11].fillna("").astype(str).str.strip()
+status_mask = status_col.isin(allowed_status)
+
+phase_col = df.iloc[:, 0].astype(str).str.strip()
+allowed_phases = ["4"]
+phase_mask = phase_col.isin(allowed_phases)
+
+# combine filters
+final_mask = assigned_mask & status_mask & phase_mask 
+# --------------------
+# select columns
+# --------------------
+
+df_view = df.loc[final_mask, [4, 9, 2, 8, 11]]
+
+df_view.columns = [
+    "Unit",
+    "Assigned to",
+    "Days open",
+    "Issue",
+    "Status"
+]
+
+# --------------------
+# sort
+# --------------------
+
+df_view = df_view.sort_values(
+    by="Days open",
+    ascending=False
+)
+
+# --------------------
+# cleanup
+# --------------------
+
+df_view = df_view.reset_index(drop=True)
+
+df_view
+
+================================================================================
+PYTHON CELL SCRIPT #24
+================================================================================
+df = xl(%P2%)
+
+# --------------------
+# filters (CONTROL TILE)
+# --------------------
+
+# Assigned filter
+allowed_assigned = ["Dennis Arevalo"]
+assigned_col = df.iloc[:, 9].fillna("").astype(str).str.strip()
+assigned_mask = assigned_col.isin(allowed_assigned)
+
+# Status filter
+allowed_status = ["In progress"]
+status_col = df.iloc[:, 11].fillna("").astype(str).str.strip()
+status_mask = status_col.isin(allowed_status)
+
+phase_col = df.iloc[:, 0].astype(str).str.strip()
+allowed_phases = ["4"]
+phase_mask = phase_col.isin(allowed_phases)
+
+# combine filters
+final_mask = assigned_mask & status_mask & phase_mask 
+
+# --------------------
+# select columns
+# --------------------
+
+df_view = df.loc[final_mask, [4, 9, 2, 8, 11]]
+
+df_view.columns = [
+    "Unit",
+    "Assigned to",
+    "Days open",
+    "Issue",
+    "Status"
+]
+
+# --------------------
+# sort
+# --------------------
+
+df_view = df_view.sort_values(
+    by="Days open",
+    ascending=False
+)
+
+# --------------------
+# cleanup
+# --------------------
+
+df_view = df_view.reset_index(drop=True)
+
+df_view
+
+================================================================================
+PYTHON CELL SCRIPT #25
+================================================================================
+df = xl(%P2%)
+
+# --------------------
+# filters (CONTROL TILE)
+# --------------------
+
+# Assigned filter
+allowed_assigned = ["Dennis Arevalo"]
+assigned_col = df.iloc[:, 9].fillna("").astype(str).str.strip()
+assigned_mask = assigned_col.isin(allowed_assigned)
+
+# Status filter
+allowed_status = ["On hold"]
+status_col = df.iloc[:, 11].fillna("").astype(str).str.strip()
+status_mask = status_col.isin(allowed_status)
+
+phase_col = df.iloc[:, 0].astype(str).str.strip()
+allowed_phases = ["4"]
+phase_mask = phase_col.isin(allowed_phases)
+
+# combine filters
+final_mask = assigned_mask & status_mask & phase_mask 
+# --------------------
+# select columns
+# --------------------
+
+df_view = df.loc[final_mask, [4, 9, 2, 8, 11]]
+
+df_view.columns = [
+    "Unit",
+    "Assigned to",
+    "Days open",
+    "Issue",
+    "Status"
+]
+
+# --------------------
+# sort
+# --------------------
+
+df_view = df_view.sort_values(
+    by="Days open",
+    ascending=False
+)
+
+# --------------------
+# cleanup
+# --------------------
+
+df_view = df_view.reset_index(drop=True)
+
+df_view
+
+================================================================================
+PYTHON CELL SCRIPT #26
+================================================================================
+df = xl(%P2%)
+
+# --------------------
+# filters (CONTROL TILE)
+# --------------------
+
+# Assigned filter
+allowed_assigned = ["Victor Castaneda"]
+assigned_col = df.iloc[:, 9].fillna("").astype(str).str.strip()
+assigned_mask = assigned_col.isin(allowed_assigned)
+
+# Status filter
+allowed_status = ["In progress"]
+status_col = df.iloc[:, 11].fillna("").astype(str).str.strip()
+status_mask = status_col.isin(allowed_status)
+
+phase_col = df.iloc[:, 0].astype(str).str.strip()
+allowed_phases = ["4c"]
+phase_mask = phase_col.isin(allowed_phases)
+
+# combine filters
+final_mask = assigned_mask & status_mask & phase_mask 
+# --------------------
+# select columns
+# --------------------
+
+df_view = df.loc[final_mask, [4, 9, 2, 8, 11]]
+
+df_view.columns = [
+    "Unit",
+    "Assigned to",
+    "Days open",
+    "Issue",
+    "Status"
+]
+
+# --------------------
+# sort
+# --------------------
+
+df_view = df_view.sort_values(
+    by="Days open",
+    ascending=False
+)
+
+# --------------------
+# cleanup
+# --------------------
+
+df_view = df_view.reset_index(drop=True)
+
+df_view
+
+================================================================================
+PYTHON CELL SCRIPT #27
+================================================================================
+df = xl(%P2%)
+
+# --------------------
+# filters (CONTROL TILE)
+# --------------------
+
+# Assigned filter
+allowed_assigned = ["Victor Castaneda"]
+assigned_col = df.iloc[:, 9].fillna("").astype(str).str.strip()
+assigned_mask = assigned_col.isin(allowed_assigned)
+
+# Status filter
+allowed_status = ["On hold"]
+status_col = df.iloc[:, 11].fillna("").astype(str).str.strip()
+status_mask = status_col.isin(allowed_status)
+
+phase_col = df.iloc[:, 0].astype(str).str.strip()
+allowed_phases = ["4c"]
+phase_mask = phase_col.isin(allowed_phases)
+
+# combine filters
+final_mask = assigned_mask & status_mask & phase_mask 
+# --------------------
+# select columns
+# --------------------
+
+df_view = df.loc[final_mask, [4, 9, 2, 8, 11]]
+
+df_view.columns = [
+    "Unit",
+    "Assigned to",
+    "Days open",
+    "Issue",
+    "Status"
+]
+
+# --------------------
+# sort
+# --------------------
+
+df_view = df_view.sort_values(
+    by="Days open",
+    ascending=False
+)
+
+# --------------------
+# cleanup
+# --------------------
+
+df_view = df_view.reset_index(drop=True)
+
+df_view
+
+================================================================================
+PYTHON CELL SCRIPT #28
+================================================================================
+df = xl(%P2%)
+
+allowed_assigned = ["Unassigned"]
+assigned_col = df.iloc[:, 9].fillna("").astype(str).str.strip()
+assigned_mask = assigned_col.isin(allowed_assigned)
+
+phase_col = df.iloc[:, 0].astype(str).str.strip()
+allowed_phases = ["4c"]
+phase_mask = phase_col.isin(allowed_phases)
+
+final_mask = assigned_mask &  phase_mask
+
+
+df_view = df.loc[final_mask, [4, 9, 2, 8, 11]]
+df_view.columns = [
+    "Unit",
+    "Assigned to",
+    "Days open",
+    "Issue",
+    "Status"
+]
+df_view = df_view.sort_values(
+    by="Days open",
+    ascending=False
+)
+df_view = df_view.reset_index(drop=True)
+df_view

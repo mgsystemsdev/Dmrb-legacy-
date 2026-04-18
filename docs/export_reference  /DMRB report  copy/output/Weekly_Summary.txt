@@ -1,0 +1,199 @@
+Subject: Weekly Property Operations Summary - March 16, 2026
+
+==============================================================
+WEEKLY OPERATIONS SUMMARY
+Week of March 09 - March 16, 2026
+==============================================================
+
+KEY METRICS
+
+Total Portfolio:           1,244
+Total Vacant Units:        58
+SLA Compliance:            82.8%
+Units Ready:               36
+
+==============================================================
+
+ALERTS
+
+SLA Breaches:              10 units
+Move-In Risk:              0 units
+Stalled Tasks:             26 units
+Plan Breaches:             22 units
+
+==============================================================
+
+UPCOMING MOVE-INS (9 units)
+
+  Unit 7-07-0104       M-I: 03/19/26  (3 days away)
+  Unit 5-18-0125       M-I: 03/21/26  (5 days away)
+  Unit 5-17-0207       M-I: 03/21/26  (5 days away)
+  Unit 5-11-0106       M-I: 03/24/26  (8 days away)
+  Unit 5-01-0221       M-I: 03/25/26  (9 days away)
+  Unit 8-01-2007       M-I: 03/26/26  (10 days away)
+  Unit 8-01-3096       M-I: 03/27/26  (11 days away)
+  Unit 8-01-1048       M-I: 03/27/26  (11 days away)
+  Unit 5-18-0145       M-I: 03/28/26  (12 days away)
+
+==============================================================
+
+UPCOMING UNITS TO BE READY (117 units)
+
+  Unit 5-01-0206       Ready Date: 04/15/26  Status: On Notice 
+  Unit 5-02-0107       Ready Date: 06/06/26  Status: On Notice 
+  Unit 5-02-0214       Ready Date: 05/22/26  Status: On Notice 
+  Unit 5-02-0305       Ready Date: 04/09/26  Status: On Notice 
+  Unit 5-03-0227       Ready Date: 02/28/26  Status: Vacant not ready
+  Unit 5-03-0230       Ready Date: 04/28/26  Status: On Notice 
+  Unit 5-03-0327       Ready Date: 03/18/26  Status: Vacant not ready
+  Unit 5-03-0327       Ready Date: 03/18/26  Status: On Notice 
+  Unit 5-03-0427       Ready Date: 04/06/26  Status: On Notice 
+  Unit 5-10-0203       Ready Date: 02/28/26  Status: Vacant ready
+  Unit 5-10-0302       Ready Date: 04/18/26  Status: On Notice 
+  Unit 5-10-0303       Ready Date: 05/05/26  Status: On Notice 
+  Unit 5-11-0102       Ready Date: 04/23/26  Status: On Notice 
+  Unit 5-11-0303       Ready Date: 02/22/26  Status: Vacant ready
+  Unit 5-12-0303       Ready Date: 04/01/26  Status: On Notice 
+  Unit 5-13-0203       Ready Date: 06/13/26  Status: On Notice 
+  Unit 5-13-0207       Ready Date: 04/09/26  Status: On Notice 
+  Unit 5-13-0305       Ready Date: 03/31/26  Status: On Notice 
+  Unit 5-13-0306       Ready Date: 04/02/26  Status: On Notice 
+  Unit 5-13-0307       Ready Date: 05/12/26  Status: On Notice 
+  Unit 5-14-0206       Ready Date: 04/11/26  Status: On Notice 
+  Unit 5-15-0204       Ready Date: 04/02/26  Status: On Notice 
+  Unit 5-15-0205       Ready Date: 04/28/26  Status: On Notice 
+  Unit 5-16-0201       Ready Date: 05/09/26  Status: On Notice 
+  Unit 5-16-0203       Ready Date: 05/07/26  Status: On Notice 
+  Unit 5-16-0207       Ready Date: 04/30/26  Status: On Notice 
+  Unit 5-17-0101       Ready Date: 05/13/26  Status: On Notice 
+  Unit 5-17-0101       Ready Date: 05/13/26  Status: On Notice 
+  Unit 5-17-0104       Ready Date: 02/28/26  Status: Vacant not ready
+  Unit 5-17-0108       Ready Date: 03/25/26  Status: On Notice 
+  Unit 5-17-0118       Ready Date: 04/25/26  Status: On Notice 
+  Unit 5-17-0204       Ready Date: 03/07/26  Status: Vacant not ready
+  Unit 5-17-0207       Ready Date: 03/01/26  Status: Vacant not ready
+  Unit 5-17-0209       Ready Date: 04/28/26  Status: On Notice 
+  Unit 5-17-0215       Ready Date: 02/13/26  Status: Vacant ready
+  Unit 5-17-0316       Ready Date: 04/04/26  Status: On Notice 
+  Unit 5-18-0106       Ready Date: 04/28/26  Status: On Notice 
+  Unit 5-18-0114       Ready Date: 06/06/26  Status: On Notice 
+  Unit 5-18-0116       Ready Date: 02/28/26  Status: Vacant not ready
+  Unit 5-18-0117       Ready Date: 02/28/26  Status: Vacant not ready
+  Unit 5-18-0125       Ready Date: 03/05/26  Status: Vacant not ready
+  Unit 5-18-0145       Ready Date: 03/28/26  Status: On Notice 
+  Unit 5-18-0221       Ready Date: 04/01/26  Status: On Notice 
+  Unit 5-18-0234       Ready Date: 04/10/26  Status: On Notice 
+  Unit 5-18-0240       Ready Date: 04/28/26  Status: On Notice 
+  Unit 5-18-0413       Ready Date: 04/24/26  Status: On Notice 
+  Unit 5-18-0421       Ready Date: 05/02/26  Status: On Notice 
+  Unit 5-18-0439       Ready Date: 03/14/26  Status: Vacant not ready
+  Unit 7-02-0207       Ready Date: 03/14/26  Status: Vacant not ready
+  Unit 7-03-0118       Ready Date: 05/09/26  Status: On Notice 
+  Unit 7-03-0213       Ready Date: 05/16/26  Status: On Notice 
+  Unit 7-03-0218       Ready Date: 04/02/26  Status: On Notice 
+  Unit 7-03-0304       Ready Date: 03/24/26  Status: On Notice 
+  Unit 7-03-0308       Ready Date: 04/24/26  Status: On Notice 
+  Unit 7-03-0310       Ready Date: 05/26/26  Status: On Notice 
+  Unit 7-04-0201       Ready Date: 06/13/26  Status: On Notice 
+  Unit 7-04-0305       Ready Date: 03/14/26  Status: Vacant not ready
+  Unit 7-04-0308       Ready Date: 05/02/26  Status: On Notice 
+  Unit 7-04-0311       Ready Date: 03/16/26  Status: Vacant not ready
+  Unit 7-06-0209       Ready Date: 03/03/26  Status: Vacant not ready
+  Unit 7-07-0107       Ready Date: 03/05/26  Status: Vacant not ready
+  Unit 7-07-0109       Ready Date: 04/02/26  Status: On Notice 
+  Unit 7-07-0203       Ready Date: 04/25/26  Status: On Notice 
+  Unit 7-07-0208       Ready Date: 04/02/26  Status: On Notice 
+  Unit 7-07-0209       Ready Date: 06/05/26  Status: On Notice 
+  Unit 7-08-0203       Ready Date: 04/18/26  Status: On Notice 
+  Unit 7-08-0208       Ready Date: 05/02/26  Status: On Notice 
+  Unit 7-08-0306       Ready Date: 04/16/26  Status: On Notice 
+  Unit 7-09-0103       Ready Date: 03/05/26  Status: Vacant not ready
+  Unit 7-09-0109       Ready Date: 04/21/26  Status: On Notice 
+  Unit 7-09-0111       Ready Date: 01/19/26  Status: Vacant ready
+  Unit 7-10-0101       Ready Date: 03/21/26  Status: Vacant not ready
+  Unit 7-10-0107       Ready Date: 02/25/26  Status: Vacant not ready
+  Unit 7-10-0203       Ready Date: 03/08/26  Status: Vacant not ready
+  Unit 7-10-0301       Ready Date: 05/09/26  Status: On Notice 
+  Unit 7-11-0202       Ready Date: 05/23/26  Status: On Notice 
+  Unit 7-11-0212       Ready Date: 05/29/26  Status: On Notice 
+  Unit 7-11-0213       Ready Date: 04/24/26  Status: On Notice 
+  Unit 7-11-0317       Ready Date: 05/09/26  Status: On Notice 
+  Unit 7-11-0407       Ready Date: 04/11/26  Status: On Notice 
+  Unit 7-11-0411       Ready Date: 04/02/26  Status: On Notice 
+  Unit 7-TH1-0102      Ready Date: 03/21/26  Status: Vacant not ready
+  Unit 7-TH2-0101      Ready Date: 03/21/26  Status: Vacant not ready
+  Unit 7-th2-0101      Ready Date: 03/21/26  Status: Vacant not ready
+  Unit 8-01-1001       Ready Date: 03/14/26  Status: Vacant not ready
+  Unit 8-01-1089       Ready Date: 04/04/26  Status: On Notice 
+  Unit 8-01-1119       Ready Date: 04/25/26  Status: On Notice 
+  Unit 8-01-1120       Ready Date: 05/02/26  Status: On Notice 
+  Unit 8-01-1122       Ready Date: 04/21/26  Status: On Notice 
+  Unit 8-01-2007       Ready Date: 03/26/26  Status: On Notice 
+  Unit 8-01-2010       Ready Date: 04/21/26  Status: On Notice 
+  Unit 8-01-2011       Ready Date: 03/14/26  Status: Vacant not ready
+  Unit 8-01-2035       Ready Date: 04/10/26  Status: On Notice 
+  Unit 8-01-2045       Ready Date: 05/07/26  Status: On Notice 
+  Unit 8-01-2053       Ready Date: 04/21/26  Status: On Notice 
+  Unit 8-01-2074       Ready Date: 04/02/26  Status: On Notice 
+  Unit 8-01-2094       Ready Date: 05/12/26  Status: On Notice 
+  Unit 8-01-3011       Ready Date: 04/30/26  Status: On Notice 
+  Unit 8-01-3011       Ready Date: 04/30/26  Status: On Notice 
+  Unit 8-01-3030       Ready Date: 03/25/26  Status: On Notice 
+  Unit 8-01-3035       Ready Date: 05/16/26  Status: On Notice 
+  Unit 8-01-3053       Ready Date: 04/11/26  Status: On Notice 
+  Unit 8-01-3053       Ready Date: 04/11/26  Status: On Notice 
+  Unit 8-01-3082       Ready Date: 04/02/26  Status: On Notice 
+  Unit 8-01-3083       Ready Date: 04/04/26  Status: On Notice 
+  Unit 8-01-3093       Ready Date: 03/18/26  Status: Vacant not ready
+  Unit 8-01-3114       Ready Date: 05/20/26  Status: On Notice 
+  Unit 8-01-4008       Ready Date: 04/02/26  Status: On Notice 
+  Unit 8-01-4013       Ready Date: 05/09/26  Status: On Notice 
+  Unit 8-01-4017       Ready Date: 05/02/26  Status: On Notice 
+  Unit 8-01-4037       Ready Date: 05/08/26  Status: On Notice 
+  Unit 8-01-4051       Ready Date: 04/11/26  Status: On Notice 
+  Unit 8-01-4080       Ready Date: 04/11/26  Status: On Notice 
+  Unit 8-01-4087       Ready Date: 05/09/26  Status: On Notice 
+  Unit 8-01-4091       Ready Date: 05/23/26  Status: On Notice 
+  Unit 8-01-4110       Ready Date: 04/28/26  Status: On Notice 
+  Unit 8-01-4124       Ready Date: 04/14/26  Status: On Notice 
+
+==============================================================
+
+UNITS WITH NO W/D (17 units)
+
+  Unit 5-03-0327       Status: Vacant not ready
+  Unit 5-10-0203       Status: Vacant ready
+  Unit 5-18-0310       Status: Vacant ready
+  Unit 5-18-0439       Status: Vacant not ready
+  Unit 7-02-0207       Status: Vacant not ready
+  Unit 7-04-0305       Status: Vacant not ready
+  Unit 7-04-0311       Status: Vacant not ready
+  Unit 7-07-0107       Status: Vacant not ready
+  Unit 7-09-0111       Status: Vacant ready
+  Unit 7-10-0101       Status: Vacant not ready
+  Unit 7-10-0203       Status: Vacant not ready
+  Unit 7-TH1-0102      Status: Vacant not ready
+  Unit 7-TH2-0101      Status: Vacant not ready
+  Unit 7-th2-0101      Status: Vacant not ready
+  Unit 8-01-1001       Status: Vacant not ready
+  Unit 8-01-2011       Status: Vacant not ready
+  Unit 8-01-3093       Status: Vacant not ready
+
+==============================================================
+
+MOVE-IN RISK (0 units)
+
+
+==============================================================
+
+AGING DISTRIBUTION
+
+      0–14     0 units
+     15–30     0 units
+     31–60    18 units
+    61–120    13 units
+      120+    10 units
+
+==============================================================
+
+This is an automated report generated from DMRB Pipeline.
