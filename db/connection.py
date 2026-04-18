@@ -29,11 +29,16 @@ def _get_pool() -> psycopg2.pool.ThreadedConnectionPool:
     if _pool is None:
         with _pool_lock:
             if _pool is None:
+                # connect_timeout caps TCP connect at 5s so an unreachable DB
+                # (e.g. IPv6-only DSN hit from an IPv4-only network) fails fast
+                # instead of hanging the FastAPI startup hook for ~2 minutes and
+                # breaking Railway's 30s healthcheck window.
                 try:
                     _pool = psycopg2.pool.ThreadedConnectionPool(
                         minconn=2,
                         maxconn=10,
                         dsn=_get_database_url(),
+                        connect_timeout=5,
                         prepare_threshold=None,
                     )
                 except TypeError:
@@ -41,6 +46,7 @@ def _get_pool() -> psycopg2.pool.ThreadedConnectionPool:
                         minconn=2,
                         maxconn=10,
                         dsn=_get_database_url(),
+                        connect_timeout=5,
                     )
     return _pool
 
