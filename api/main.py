@@ -1,4 +1,5 @@
 from __future__ import annotations
+import logging
 from pathlib import Path
 import time
 from fastapi import FastAPI, Response, HTTPException
@@ -11,7 +12,28 @@ from api.schemas.auth import LoginRequest
 from services import auth_service
 from config.settings import SECRET_KEY
 
+logger = logging.getLogger(__name__)
+
 app = FastAPI(title="DMRB Legacy API")
+
+
+@app.on_event("startup")
+async def _apply_migrations() -> None:
+    """Run idempotent schema + incremental migrations before serving traffic."""
+    from db.migration_runner import ensure_database_ready
+
+    try:
+        ensure_database_ready()
+    except Exception as exc:
+        logger.exception("Database migration on startup failed: %s", exc)
+        raise
+
+
+@app.get("/healthz", tags=["health"])
+async def healthz():
+    """Public, unauthenticated liveness probe for Railway health checks."""
+    return {"status": "ok"}
+
 
 app.add_middleware(RequestIDMiddleware)
 app.add_middleware(AuthMiddleware)
@@ -57,7 +79,7 @@ async def api_login(request: LoginRequest, response: Response):
         value=token,
         httponly=True,
         samesite="lax",
-        secure=False,
+        secure=SESSION_COOKIE_SECURE,
         max_age=3600 * 24,
     )
     return {"status": "ok"}
@@ -71,5 +93,11 @@ async def api_logout(response: Response):
 
 
 if __name__ == "__main__":
+    import os
     import uvicorn
-    uvicorn.run("api.main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(
+        "api.main:app",
+        host="0.0.0.0",
+        port=int(os.getenv("PORT", "8000")),
+        reload=True,
+    )

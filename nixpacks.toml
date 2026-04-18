@@ -1,0 +1,24 @@
+# Nixpacks build config for Railway (DMRB Legacy — Python + React monorepo).
+# Installs Python 3.11 + Node 20, installs server deps, builds the React bundle,
+# then starts FastAPI bound to Railway's injected $PORT.
+# Schema: https://nixpacks.com/docs/configuration/file
+
+providers = ["python", "node"]
+
+[phases.setup]
+nixPkgs = ["python311", "python311Packages.pip", "nodejs_20"]
+
+[phases.install]
+cmds = [
+  "python -m pip install --upgrade pip",
+  "python -m pip install -r requirements.txt",
+  "npm --prefix frontend ci",
+]
+
+[phases.build]
+cmds = [
+  "npm --prefix frontend run build",
+]
+
+[start]
+cmd = "uvicorn api.main:app --host 0.0.0.0 --port ${PORT} --proxy-headers --forwarded-allow-ips=*"

@@ -41,7 +41,22 @@ APP_USERNAME = get_setting("APP_USERNAME", "")
 APP_PASSWORD = get_setting("APP_PASSWORD", "")
 VALIDATOR_USERNAME = get_setting("VALIDATOR_USERNAME", "")
 VALIDATOR_PASSWORD = get_setting("VALIDATOR_PASSWORD", "")
-SECRET_KEY = get_setting("SECRET_KEY", "dev-secret-key-change-me-in-production")
+
+_DEFAULT_SECRET_KEY = "dev-secret-key-change-me-in-production"
+SECRET_KEY = get_setting("SECRET_KEY", _DEFAULT_SECRET_KEY)
+
+IS_PRODUCTION = bool(
+    os.getenv("RAILWAY_ENVIRONMENT_NAME")
+    or os.getenv("RAILWAY_ENVIRONMENT")
+    or is_truthy_setting("PRODUCTION")
+)
+SESSION_COOKIE_SECURE = IS_PRODUCTION or is_truthy_setting("SESSION_COOKIE_SECURE")
+
+if IS_PRODUCTION and SECRET_KEY == _DEFAULT_SECRET_KEY:
+    raise RuntimeError(
+        "SECRET_KEY must be set to a strong value in production. "
+        "Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(64))\""
+    )
 
 # Streamlit login: "env" = APP_* / VALIDATOR_* (default). "db" = public.app_user + Argon2.
 _LEGACY_AUTH_SRC = (get_setting("LEGACY_AUTH_SOURCE", "env") or "env").strip().lower()
