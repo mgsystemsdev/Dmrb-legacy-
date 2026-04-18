@@ -10,5 +10,6 @@ router = APIRouter()
 async def health_check(user: dict = Depends(get_current_user)):
     return {
         "status": "healthy",
-        "db_pool": get_pool_stats()
+        "db_pool": get_pool_stats(),
+        "queue_depth": 0 # Redis/RQ not enabled, synchronous execution
     }

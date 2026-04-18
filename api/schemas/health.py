@@ -5,3 +5,4 @@ from typing import Dict, Any
 class HealthResponse(BaseModel):
     status: str
     db_pool: Dict[str, Any]
+    queue_depth: int

@@ -6,3 +6,7 @@ xlrd>=2.0.1
 matplotlib
 openai>=1.0.0,<2
 argon2-cffi>=23.1.0
+fastapi>=0.115.0
+uvicorn>=0.34.0
+itsdangerous>=2.2.0
+pydantic>=2.0.0
