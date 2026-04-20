@@ -17,7 +17,6 @@ from services import (
     property_service,
     risk_service,
     system_settings_service,
-    unit_service,
 )
 from services.ai.ai_agent_chat_service import (
     AiAgentApiError,
@@ -31,6 +30,8 @@ from services.report_operations import missing_move_out_service, override_confli
 from services.turnover_service import TurnoverError
 from services.work_order_validator_service import build_report, get_summary, validate
 from services.write_guard import WritesDisabledError
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -187,11 +188,32 @@ async def patch_admin_settings(body: SettingsPatchRequest, user: dict = Depends(
 
 @router.post("/operations/admin/properties")
 async def create_property(body: CreatePropertyRequest, user: dict = Depends(get_current_user)):
+    logger.info(
+        "create_property:request username=%s role=%s body=%r",
+        user.get("username"),
+        user.get("role"),
+        body.model_dump(),
+    )
     _require_admin(user)
     try:
         property_row = property_service.create_property(body.name.strip())
     except WritesDisabledError as exc:
+        logger.warning(
+            "create_property:writes_disabled type=%s message=%s",
+            type(exc).__name__,
+            str(exc),
+        )
         raise HTTPException(status_code=400, detail=str(exc))
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception(
+            "create_property:unhandled type=%s message=%s",
+            type(exc).__name__,
+            str(exc),
+        )
+        raise
+    logger.info("create_property:success property_row=%r", property_row)
     return _serialize(property_row)
 
 
