@@ -27,7 +27,7 @@ def main() -> int:
             SELECT task_id, turnover_id, task_type, execution_status,
                    vendor_completed_at, completed_date
             FROM task
-            WHERE execution_status = 'COMPLETED' AND completed_date IS NULL
+            WHERE execution_status = 'COMPLETE' AND completed_date IS NULL
             ORDER BY task_id
             """
         )

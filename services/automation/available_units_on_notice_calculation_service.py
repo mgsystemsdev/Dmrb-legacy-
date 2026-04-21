@@ -181,10 +181,6 @@ def _process_on_notice_rows(
                     actor=CALCULATION_ACTOR,
                     **initial_fields,
                 )
-                turnover_service.ensure_turnover_has_tasks(
-                    turnover_id,
-                    actor=CALCULATION_ACTOR,
-                )
                 audit_repository.insert(
                     property_id=property_id,
                     entity_type="turnover",

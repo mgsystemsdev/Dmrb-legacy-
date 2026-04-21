@@ -203,7 +203,7 @@ def board_breach_row_display(item: dict) -> BoardBreachDisplay:
     else:
         tasks = tasks_raw
         has_incomplete_tasks = any(
-            t.get("execution_status") != "COMPLETED" for t in tasks
+            t.get("execution_status") != "COMPLETE" for t in tasks
         )
 
     inspection_task = next(
@@ -213,7 +213,7 @@ def board_breach_row_display(item: dict) -> BoardBreachDisplay:
 
     status_display = display_status_for_board_item(item)
     if status_display == "Vacant not ready":
-        insp_completed = inspection_task and inspection_task.get("execution_status") == "COMPLETED"
+        insp_completed = inspection_task and inspection_task.get("execution_status") == "COMPLETE"
         if insp_completed:
             insp_display = "🟢"
         else:
@@ -286,7 +286,7 @@ def alert_icon(priority: str) -> str:
 
 def qc_label(tasks: list[dict]) -> str:
     """QC status: Confirmed when all completed tasks have manager_confirmed_at."""
-    completed = [task for task in tasks if task["execution_status"] == "COMPLETED"]
+    completed = [task for task in tasks if task["execution_status"] == "COMPLETE"]
     if not completed:
         return "Pending"
     all_confirmed = all(task.get("manager_confirmed_at") is not None for task in completed)

@@ -11,6 +11,7 @@ from __future__ import annotations
 import logging
 from datetime import date, datetime, timedelta
 
+from db.connection import transaction
 from db.repository import (
     audit_repository,
     import_repository,
@@ -60,92 +61,90 @@ def create_turnover(
             f"Unit {unit_id} already has an open turnover (ID {existing['turnover_id']})."
         )
 
-    turnover = turnover_repository.insert(
-        property_id,
-        unit_id,
-        move_out_date,
-        move_in_date=move_in_date,
-        scheduled_move_out_date=scheduled_move_out_date,
-    )
-    audit_repository.insert(
-        property_id=property_id,
-        entity_type="turnover",
-        entity_id=turnover["turnover_id"],
-        field_name="created",
-        old_value=None,
-        new_value=str(turnover["turnover_id"]),
-        actor=actor,
-        source="turnover_service",
-    )
-
-    placeholder_ready = move_out_date + timedelta(days=PLACEHOLDER_READY_DATE_OFFSET_DAYS)
-    turnover = turnover_repository.update(
-        turnover["turnover_id"],
-        report_ready_date=placeholder_ready,
-    )
-    audit_repository.insert(
-        property_id=property_id,
-        entity_type="turnover",
-        entity_id=turnover["turnover_id"],
-        field_name="report_ready_date",
-        old_value=None,
-        new_value=str(placeholder_ready),
-        actor=actor,
-        source="turnover_service.placeholder",
-    )
-
-    # Record unit moving for Work Order Validator (must not break turnover creation)
-    try:
-        from services.unit_movings_service import record_unit_moving
-        record_unit_moving(unit["unit_code_norm"], move_out_date)
-    except Exception:
-        logger.exception("Failed to record unit moving after turnover creation")
-
-    evaluation_result = risk_service.evaluate_sla_state(turnover)
-    risk_service.sync_risk_from_sla(turnover, evaluation_result)
-
-    # Auto-create pipeline tasks for this turnover (task_service prevents duplicates)
     phase_id = unit.get("phase_id")
     if phase_id is None:
+        raise TurnoverError(f"Unit {unit_id} has no phase assigned; cannot create turnover tasks.")
+
+    with transaction():
+        turnover = turnover_repository.insert(
+            property_id,
+            unit_id,
+            move_out_date,
+            move_in_date=move_in_date,
+            scheduled_move_out_date=scheduled_move_out_date,
+        )
+        turnover_id = turnover["turnover_id"]
+
         audit_repository.insert(
             property_id=property_id,
             entity_type="turnover",
-            entity_id=turnover["turnover_id"],
-            field_name="pipeline_tasks",
+            entity_id=turnover_id,
+            field_name="created",
             old_value=None,
-            new_value="skipped: unit has no phase",
+            new_value=str(turnover_id),
             actor=actor,
             source="turnover_service",
         )
-    else:
+
+        placeholder_ready = move_out_date + timedelta(days=PLACEHOLDER_READY_DATE_OFFSET_DAYS)
+        turnover = turnover_repository.update(
+            turnover_id,
+            report_ready_date=placeholder_ready,
+        )
+        audit_repository.insert(
+            property_id=property_id,
+            entity_type="turnover",
+            entity_id=turnover_id,
+            field_name="report_ready_date",
+            old_value=None,
+            new_value=str(placeholder_ready),
+            actor=actor,
+            source="turnover_service.placeholder",
+        )
+
+        # Record unit moving for Work Order Validator
+        try:
+            from services.unit_movings_service import record_unit_moving
+            record_unit_moving(unit["unit_code_norm"], move_out_date)
+        except Exception:
+            # We log but don't fail the whole transaction for unit_movings (non-critical)
+            logger.exception("Failed to record unit moving during turnover creation")
+
+        # Auto-create pipeline tasks (strictly required)
         task_service.ensure_default_templates_for_phase(property_id, phase_id)
         if not task_service.has_templates_for_phase(phase_id):
             raise TurnoverError(
-                f"Phase {phase_id} has no active task templates after default seeding; "
-                "cannot create pipeline tasks."
-            )
-        try:
-            task_service.instantiate_templates(
-                property_id,
-                turnover["turnover_id"],
-                phase_id,
-                move_out_date,
-                actor=actor,
-            )
-        except Exception:
-            logger.exception("Failed to instantiate pipeline tasks after turnover creation")
-            audit_repository.insert(
-                property_id=property_id,
-                entity_type="turnover",
-                entity_id=turnover["turnover_id"],
-                field_name="pipeline_tasks",
-                old_value=None,
-                new_value="Pipeline task generation failed after turnover creation.",
-                actor=actor,
-                source="turnover_service",
+                f"Phase {phase_id} has no active task templates; cannot create turnover."
             )
 
-    return turnover
+        tasks = task_service.instantiate_templates(
+            property_id,
+            turnover_id,
+            phase_id,
+            move_out_date,
+            actor=actor,
+        )
+        if not tasks:
+            raise TurnoverError(
+                f"No tasks were generated for turnover {turnover_id} (phase {phase_id}); "
+                "turnover creation aborted."
+            )
+
+        audit_repository.insert(
+            property_id=property_id,
+            entity_type="turnover",
+            entity_id=turnover_id,
+            field_name="pipeline_tasks",
+            old_value=None,
+            new_value=f"Generated {len(tasks)} tasks.",
+            actor=actor,
+            source="turnover_service",
+        )
+
+        evaluation_result = risk_service.evaluate_sla_state(turnover)
+        risk_service.sync_risk_from_sla(turnover, evaluation_result)
+
+        return turnover
 
 
 def update_turnover(
@@ -217,83 +216,6 @@ def cancel_turnover(
         canceled_at=datetime.utcnow(),
         cancel_reason=reason,
     )
-
-
-def ensure_turnover_has_tasks(turnover_id: int, actor: str = "system") -> bool:
-    """If the turnover is open and has no tasks, create them from templates and audit. Return True if repair ran."""
-    check_writes_enabled()
-    existing = turnover_repository.get_by_id(turnover_id)
-    if existing is None or not turnover_lifecycle.is_open(existing):
-        return False
-    if task_repository.get_by_turnover(turnover_id):
-        return False
-    unit_id = existing.get("unit_id")
-    unit = unit_repository.get_by_id(unit_id) if unit_id else None
-    if unit is None:
-        return False
-    phase_id = unit.get("phase_id")
-    if phase_id is None:
-        return False
-    property_id = existing["property_id"]
-    move_out_date = existing.get("move_out_date")
-    if move_out_date is None:
-        return False
-    task_service.ensure_default_templates_for_phase(property_id, phase_id)
-    if not task_service.has_templates_for_phase(phase_id):
-        return False
-    created = task_service.instantiate_templates(
-        property_id,
-        turnover_id,
-        phase_id,
-        move_out_date,
-        actor=actor,
-    )
-    if not created:
-        return False
-    audit_repository.insert(
-        property_id=property_id,
-        entity_type="turnover",
-        entity_id=turnover_id,
-        field_name="pipeline_tasks",
-        old_value=None,
-        new_value="Pipeline tasks generated automatically.",
-        actor=actor,
-        source="turnover_service",
-    )
-    return True
-
-
-def backfill_tasks_for_property(
-    property_id: int,
-    *,
-    phase_ids: list[int] | None = None,
-) -> dict:
-    """Scan open turnovers for the property; for each with zero tasks, call ensure_turnover_has_tasks.
-
-    Returns dict with keys: repaired (int), skipped (int), errors (list[str]).
-    """
-    check_writes_enabled()
-    open_turnovers = turnover_repository.get_open_by_property(
-        property_id,
-        phase_ids=phase_ids,
-    )
-    repaired = 0
-    skipped = 0
-    errors: list[str] = []
-    for turnover in open_turnovers:
-        turnover_id = turnover["turnover_id"]
-        try:
-            if ensure_turnover_has_tasks(turnover_id, actor="system"):
-                repaired += 1
-            else:
-                skipped += 1
-        except TurnoverError as exc:
-            errors.append(f"turnover_id={turnover_id}: {exc}")
-            logger.warning("Backfill failed for turnover %s: %s", turnover_id, exc)
-        except Exception as exc:
-            errors.append(f"turnover_id={turnover_id}: {exc}")
-            logger.exception("Backfill failed for turnover %s", turnover_id)
-    return {"repaired": repaired, "skipped": skipped, "errors": errors}
 
 
 def ensure_on_notice_turnovers_for_property(
@@ -371,7 +293,6 @@ def ensure_on_notice_turnovers_for_property(
             if move_in_ready_date is not None:
                 initial_fields["report_ready_date"] = move_in_ready_date
             update_turnover(turnover_id, actor="system", **initial_fields)
-            ensure_turnover_has_tasks(turnover_id, actor="system")
             audit_repository.insert(
                 property_id=property_id,
                 entity_type="turnover",
@@ -487,41 +408,6 @@ def reconcile_open_turnovers_from_latest_available_units(
             updated += 1
 
     return {"updated": updated, "rows_seen": rows_seen}
-
-
-def backfill_tasks_all_properties(
-    *,
-    phase_ids_by_property: dict[int, list[int]] | None = None,
-) -> dict:
-    """Run backfill_tasks_for_property for every property. For use by system maintenance (e.g. cron).
-
-    Returns dict with keys: total_repaired (int), total_skipped (int),
-    by_property (dict[property_id, result]), errors (list[str]).
-    """
-    check_writes_enabled()
-    phase_ids_by_property = phase_ids_by_property or {}
-    properties = property_repository.get_all()
-    total_repaired = 0
-    total_skipped = 0
-    by_property: dict[int, dict] = {}
-    all_errors: list[str] = []
-    for prop in properties:
-        pid = prop["property_id"]
-        result = backfill_tasks_for_property(
-            pid,
-            phase_ids=phase_ids_by_property.get(pid),
-        )
-        by_property[pid] = result
-        total_repaired += result["repaired"]
-        total_skipped += result["skipped"]
-        for err in result["errors"]:
-            all_errors.append(f"property_id={pid}: {err}")
-    return {
-        "total_repaired": total_repaired,
-        "total_skipped": total_skipped,
-        "by_property": by_property,
-        "errors": all_errors,
-    }
 
 
 def backfill_placeholder_ready_dates(

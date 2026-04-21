@@ -81,10 +81,6 @@ def run_available_date_transition(
                 availability_status="vacant not ready",
                 status_manual_override_at=datetime.now(tz=timezone.utc),
             )
-            turnover_service.ensure_turnover_has_tasks(
-                turnover_id,
-                actor=AUTOMATION_ACTOR,
-            )
             audit_repository.insert(
                 property_id=property_id,
                 entity_type="turnover",
@@ -193,10 +189,6 @@ def run_on_notice_turnover_creation(
                 turnover_id,
                 actor=AUTOMATION_ACTOR,
                 **initial_fields,
-            )
-            turnover_service.ensure_turnover_has_tasks(
-                turnover_id,
-                actor=AUTOMATION_ACTOR,
             )
             audit_repository.insert(
                 property_id=property_id,

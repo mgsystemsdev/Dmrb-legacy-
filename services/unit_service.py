@@ -35,10 +35,6 @@ def get_unit_detail(turnover_id: int, today: date | None = None) -> dict | None:
     unit = get_unit_by_id(unit_id) if unit_id else None
     readiness = task_service.get_readiness(turnover_id)
     tasks = readiness["tasks"]
-    if turnover_lifecycle.is_open(detail) and len(tasks) == 0:
-        if turnover_service.ensure_turnover_has_tasks(turnover_id, actor="system"):
-            readiness = task_service.get_readiness(turnover_id)
-            tasks = readiness["tasks"]
     sla = risk_service.evaluate_sla(turnover_id, today=today)
     dtbr = turnover_lifecycle.days_to_be_ready(detail, tasks, today)
     is_open = turnover_lifecycle.is_open(detail)

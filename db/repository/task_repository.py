@@ -37,20 +37,21 @@ def insert_template(
     sort_order: int = 0,
     required: bool = True,
     blocking: bool = True,
+    skip_allowed: bool = False,
 ) -> dict:
     with get_connection() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(
             """
             INSERT INTO task_template (
                 property_id, phase_id, task_type, offset_days_from_move_out,
-                sort_order, required, blocking
+                sort_order, required, blocking, skip_allowed
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING *
             """,
             (
                 property_id, phase_id, task_type, offset_days_from_move_out,
-                sort_order, required, blocking,
+                sort_order, required, blocking, skip_allowed,
             ),
         )
         return cur.fetchone()
@@ -65,6 +66,7 @@ def insert_template_if_no_active_for_phase(
     sort_order: int = 0,
     required: bool = True,
     blocking: bool = True,
+    skip_allowed: bool = False,
 ) -> dict | None:
     """Insert one template when no *active* row exists for (phase_id, task_type).
 
@@ -76,9 +78,9 @@ def insert_template_if_no_active_for_phase(
             """
             INSERT INTO task_template (
                 property_id, phase_id, task_type, offset_days_from_move_out,
-                sort_order, required, blocking, is_active
+                sort_order, required, blocking, is_active, skip_allowed
             )
-            SELECT %s, %s, %s, %s, %s, %s, %s, TRUE
+            SELECT %s, %s, %s, %s, %s, %s, %s, TRUE, %s
             WHERE NOT EXISTS (
                 SELECT 1 FROM task_template t
                 WHERE t.phase_id = %s
@@ -95,6 +97,7 @@ def insert_template_if_no_active_for_phase(
                 sort_order,
                 required,
                 blocking,
+                skip_allowed,
                 phase_id,
                 task_type,
             ),
@@ -111,6 +114,7 @@ def update_template(
     required: bool | None = None,
     blocking: bool | None = None,
     is_active: bool | None = None,
+    skip_allowed: bool | None = None,
 ) -> dict | None:
     fields = {
         "task_type": task_type,
@@ -119,6 +123,7 @@ def update_template(
         "required": required,
         "blocking": blocking,
         "is_active": is_active,
+        "skip_allowed": skip_allowed,
     }
     # Drop fields that were not supplied (None means "caller did not pass this").
     safe_fields = {k: v for k, v in fields.items() if v is not None}
@@ -192,7 +197,7 @@ def get_completed_on(
                 ON u.unit_id = tr.unit_id
                 AND u.property_id = tr.property_id
             WHERE t.property_id = %s
-              AND t.execution_status = 'COMPLETED'
+              AND t.execution_status = 'COMPLETE'
               AND t.completed_date = %s
         """
         if phase_ids is not None:
@@ -224,7 +229,9 @@ def insert(
     vendor_due_date: date | None = None,
     required: bool = True,
     blocking: bool = True,
+    skip_allowed: bool = False,
     assignee: str | None = None,
+    execution_status: str = "SCHEDULED",
 ) -> dict:
     with get_connection() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(
@@ -232,15 +239,17 @@ def insert(
             INSERT INTO task (
                 property_id, turnover_id, task_type,
                 scheduled_date, vendor_due_date,
-                required, blocking, assignee
+                required, blocking, skip_allowed, assignee,
+                execution_status
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING *
             """,
             (
                 property_id, turnover_id, task_type,
                 scheduled_date, vendor_due_date,
-                required, blocking, assignee,
+                required, blocking, skip_allowed, assignee,
+                execution_status,
             ),
         )
         return cur.fetchone()
@@ -250,6 +259,7 @@ _TASK_UPDATABLE = frozenset({
     "scheduled_date", "vendor_due_date", "execution_status",
     "vendor_completed_at", "completed_date",
     "required", "blocking", "assignee",
+    "skip_allowed", "blocked_reason",
 })
 
 

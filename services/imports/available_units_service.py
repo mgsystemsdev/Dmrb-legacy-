@@ -27,6 +27,7 @@ from db.repository import (
     turnover_repository,
     audit_repository,
     unit_repository,
+    unit_on_notice_snapshot_repository,
 )
 from services import turnover_service
 from services.imports import common
@@ -172,6 +173,12 @@ def _handle_no_turnover(
 
     # On Notice: IGNORED; effective status and turnover creation handled on board load.
     if on_notice and not allows_creation:
+        unit_on_notice_snapshot_repository.upsert(
+            property_id=property_id,
+            unit_id=unit_id,
+            available_date=available_date,
+            move_in_ready_date=move_in_ready_date,
+        )
         return (
             import_outcomes.IGNORED,
             import_outcomes.ON_NOTICE_PENDING_AVAILABLE_DATE,

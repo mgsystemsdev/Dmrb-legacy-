@@ -76,7 +76,7 @@ def evaluate_turnover_agreements(
         inspection_flag = "GREEN"
     else:
         inspection_done = any(
-            t["execution_status"] == "COMPLETED" for t in inspection_tasks
+            t["execution_status"] == "COMPLETE" for t in inspection_tasks
         )
         if inspection_done:
             inspection_flag = "GREEN"

@@ -152,6 +152,7 @@ CREATE TABLE task_template (
     required BOOLEAN NOT NULL DEFAULT TRUE,
     blocking BOOLEAN NOT NULL DEFAULT TRUE,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    skip_allowed BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT task_template_type_not_blank CHECK (BTRIM(task_type) <> ''),
@@ -170,11 +171,13 @@ CREATE TABLE task (
     task_type TEXT NOT NULL,
     scheduled_date DATE,
     vendor_due_date DATE,
-    execution_status TEXT NOT NULL DEFAULT 'NOT_STARTED',
+    execution_status TEXT NOT NULL DEFAULT 'SCHEDULED',
     vendor_completed_at TIMESTAMPTZ,
     completed_date DATE,
     required BOOLEAN NOT NULL DEFAULT TRUE,
     blocking BOOLEAN NOT NULL DEFAULT TRUE,
+    skip_allowed BOOLEAN NOT NULL DEFAULT FALSE,
+    blocked_reason TEXT,
     assignee TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -184,12 +187,12 @@ CREATE TABLE task (
         ON DELETE RESTRICT,
     CONSTRAINT task_type_not_blank CHECK (BTRIM(task_type) <> ''),
     CONSTRAINT task_execution_status_valid CHECK (
-        execution_status IN ('NOT_STARTED', 'SCHEDULED', 'IN_PROGRESS', 'COMPLETED')
+        execution_status IN ('SCHEDULED', 'IN_PROGRESS', 'COMPLETE', 'SKIPPED', 'BLOCKED')
     ),
     CONSTRAINT task_turnover_task_type_unique UNIQUE (turnover_id, task_type),
     CONSTRAINT task_property_task_unique UNIQUE (property_id, task_id),
     CONSTRAINT task_completed_requires_vendor_completed_at CHECK (
-        execution_status <> 'COMPLETED' OR vendor_completed_at IS NOT NULL
+        execution_status <> 'COMPLETE' OR vendor_completed_at IS NOT NULL
     )
 );
 

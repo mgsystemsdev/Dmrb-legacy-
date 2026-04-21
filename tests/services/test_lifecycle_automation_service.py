@@ -41,7 +41,6 @@ def test_scenario_a_eligible_unit_transitions_and_audits():
     with (
         patch("services.automation.lifecycle_automation_service.turnover_repository.get_open_by_property", return_value=fake_turnovers),
         patch("services.automation.lifecycle_automation_service.turnover_service.update_turnover") as mock_update,
-        patch("services.automation.lifecycle_automation_service.turnover_service.ensure_turnover_has_tasks") as mock_ensure,
         patch("services.automation.lifecycle_automation_service.audit_repository.insert") as mock_audit,
     ):
         result = run_available_date_transition(property_id=1, today=TODAY)
@@ -55,7 +54,6 @@ def test_scenario_a_eligible_unit_transitions_and_audits():
         availability_status="vacant not ready",
         status_manual_override_at=ANY,
     )
-    mock_ensure.assert_called_once_with(99, actor="system")
     audit_calls = [c for c in mock_audit.call_args_list if c.kwargs.get("source") == AUTOMATION_SOURCE]
     assert len(audit_calls) == 1
     assert audit_calls[0].kwargs["entity_type"] == "turnover"
@@ -82,7 +80,6 @@ def test_scenario_a2_catchup_dv5_transitions():
     with (
         patch("services.automation.lifecycle_automation_service.turnover_repository.get_open_by_property", return_value=fake_turnovers),
         patch("services.automation.lifecycle_automation_service.turnover_service.update_turnover") as mock_update,
-        patch("services.automation.lifecycle_automation_service.turnover_service.ensure_turnover_has_tasks"),
         patch("services.automation.lifecycle_automation_service.audit_repository.insert"),
     ):
         result = run_available_date_transition(property_id=1, today=TODAY)
@@ -202,7 +199,6 @@ def test_scenario_e_repeat_execution_no_duplicate():
     with (
         patch("services.automation.lifecycle_automation_service.turnover_repository.get_open_by_property", return_value=fake_first),
         patch("services.automation.lifecycle_automation_service.turnover_service.update_turnover"),
-        patch("services.automation.lifecycle_automation_service.turnover_service.ensure_turnover_has_tasks"),
         patch("services.automation.lifecycle_automation_service.audit_repository.insert"),
     ):
         r1 = run_available_date_transition(property_id=1, today=TODAY)
@@ -286,9 +282,6 @@ def test_on_notice_creation_creates_turnover_and_deletes_snapshot():
             "services.automation.lifecycle_automation_service.turnover_service.update_turnover",
         ) as mock_update,
         patch(
-            "services.automation.lifecycle_automation_service.turnover_service.ensure_turnover_has_tasks",
-        ) as mock_ensure,
-        patch(
             "services.automation.lifecycle_automation_service.audit_repository.insert",
         ) as mock_audit,
         patch(
@@ -309,7 +302,6 @@ def test_on_notice_creation_creates_turnover_and_deletes_snapshot():
     assert mock_update.call_args.kwargs["availability_status"] == "vacant not ready"
     assert mock_update.call_args.kwargs["manual_ready_status"] == "Vacant Not Ready"
     assert mock_update.call_args.kwargs["report_ready_date"] == date(2026, 3, 25)
-    mock_ensure.assert_called_once_with(200, actor="system")
     mock_delete.assert_called_once_with(1, 101)
     audit_calls = [c for c in mock_audit.call_args_list if c.kwargs.get("source") == AUTOMATION_SOURCE]
     assert len(audit_calls) == 1

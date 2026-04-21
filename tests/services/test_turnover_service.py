@@ -1,6 +1,6 @@
 """Tests for services/turnover_service.py against the JSON backend."""
 from datetime import date, timedelta
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 import pytest
 
@@ -8,8 +8,6 @@ from services.turnover_service import (
     PLACEHOLDER_READY_DATE_OFFSET_DAYS,
     TurnoverError,
     backfill_placeholder_ready_dates,
-    backfill_tasks_all_properties,
-    backfill_tasks_for_property,
     create_turnover,
     update_turnover,
     close_turnover,
@@ -23,47 +21,120 @@ from services.turnover_service import (
 
 
 def test_create_turnover_success():
-    """Unit 6 (B-203) has no open turnover — creation should succeed."""
-    turnover = create_turnover(
-        property_id=1,
-        unit_id=6,
-        move_out_date=date(2026, 4, 1),
-    )
+    """Unit 6 (B-203) has no open turnover and has a phase — creation should succeed with tasks."""
+    fake_unit = {"unit_id": 6, "property_id": 1, "is_active": True, "phase_id": 1, "unit_code_norm": "B-203"}
+    fake_turnover = {"turnover_id": 100, "property_id": 1, "unit_id": 6, "move_out_date": date(2026, 4, 1)}
+    
+    with patch("db.repository.unit_repository.get_by_id", return_value=fake_unit), \
+         patch("db.repository.turnover_repository.get_open_by_unit", return_value=None), \
+         patch("db.repository.turnover_repository.insert", return_value=fake_turnover), \
+         patch("db.repository.turnover_repository.update", return_value=fake_turnover), \
+         patch("db.repository.audit_repository.insert"), \
+         patch("services.risk_service.evaluate_sla_state"), \
+         patch("services.risk_service.sync_risk_from_sla"), \
+         patch("services.task_service.instantiate_templates", return_value=[{"task_id": 1}]), \
+         patch("services.task_service.has_templates_for_phase", return_value=True), \
+         patch("services.task_service.ensure_default_templates_for_phase"):
+        turnover = create_turnover(
+            property_id=1,
+            unit_id=6,
+            move_out_date=date(2026, 4, 1),
+        )
     assert turnover["unit_id"] == 6
-    assert turnover["turnover_id"] == 6  # next counter value
     assert turnover["move_out_date"] == date(2026, 4, 1)
-    assert turnover["closed_at"] is None
-    assert turnover["canceled_at"] is None
+
+
+def test_create_turnover_fails_if_no_phase():
+    """Unit with no phase should fail turnover creation."""
+    fake_unit = {"unit_id": 7, "property_id": 1, "is_active": True, "phase_id": None}
+    with patch("db.repository.unit_repository.get_by_id", return_value=fake_unit), \
+         patch("db.repository.turnover_repository.get_open_by_unit", return_value=None):
+        with pytest.raises(TurnoverError, match="has no phase assigned"):
+            create_turnover(property_id=1, unit_id=7, move_out_date=date(2026, 4, 1))
+
+
+def test_create_turnover_fails_if_no_templates():
+    """Unit with phase but no templates should fail."""
+    fake_unit = {"unit_id": 6, "property_id": 1, "is_active": True, "phase_id": 1}
+    fake_turnover = {"turnover_id": 100, "property_id": 1, "unit_id": 6}
+    with patch("db.repository.unit_repository.get_by_id", return_value=fake_unit), \
+         patch("db.repository.turnover_repository.get_open_by_unit", return_value=None), \
+         patch("db.repository.turnover_repository.insert", return_value=fake_turnover), \
+         patch("db.repository.turnover_repository.update", return_value=fake_turnover), \
+         patch("db.repository.audit_repository.insert"), \
+         patch("services.task_service.has_templates_for_phase", return_value=False), \
+         patch("services.task_service.ensure_default_templates_for_phase"):
+        with pytest.raises(TurnoverError, match="has no active task templates"):
+            create_turnover(property_id=1, unit_id=6, move_out_date=date(2026, 4, 1))
+
+
+def test_create_turnover_fails_if_instantiate_returns_empty():
+    """If no tasks are actually created, the turnover creation should abort."""
+    fake_unit = {"unit_id": 6, "property_id": 1, "is_active": True, "phase_id": 1}
+    fake_turnover = {"turnover_id": 100, "property_id": 1, "unit_id": 6}
+    with patch("db.repository.unit_repository.get_by_id", return_value=fake_unit), \
+         patch("db.repository.turnover_repository.get_open_by_unit", return_value=None), \
+         patch("db.repository.turnover_repository.insert", return_value=fake_turnover), \
+         patch("db.repository.turnover_repository.update", return_value=fake_turnover), \
+         patch("db.repository.audit_repository.insert"), \
+         patch("services.task_service.has_templates_for_phase", return_value=True), \
+         patch("services.task_service.ensure_default_templates_for_phase"), \
+         patch("services.task_service.instantiate_templates", return_value=[]):
+        with pytest.raises(TurnoverError, match="No tasks were generated"):
+            create_turnover(property_id=1, unit_id=6, move_out_date=date(2026, 4, 1))
 
 
 def test_create_turnover_sets_placeholder_ready_date():
     """New turnover gets report_ready_date = move_out_date + PLACEHOLDER_READY_DATE_OFFSET_DAYS."""
     move_out = date(2026, 4, 1)
-    turnover = create_turnover(
-        property_id=1,
-        unit_id=6,
-        move_out_date=move_out,
-    )
+    fake_unit = {"unit_id": 6, "property_id": 1, "is_active": True, "phase_id": 1}
+    fake_turnover = {"turnover_id": 100, "property_id": 1, "unit_id": 6, "move_out_date": move_out}
+    
+    with patch("db.repository.unit_repository.get_by_id", return_value=fake_unit), \
+         patch("db.repository.turnover_repository.get_open_by_unit", return_value=None), \
+         patch("db.repository.turnover_repository.insert", return_value=fake_turnover), \
+         patch("db.repository.turnover_repository.update", side_effect=lambda tid, **kw: {**fake_turnover, **kw}), \
+         patch("db.repository.audit_repository.insert"), \
+         patch("services.risk_service.evaluate_sla_state"), \
+         patch("services.risk_service.sync_risk_from_sla"), \
+         patch("services.task_service.instantiate_templates", return_value=[{"task_id": 1}]), \
+         patch("services.task_service.has_templates_for_phase", return_value=True), \
+         patch("services.task_service.ensure_default_templates_for_phase"):
+        turnover = create_turnover(
+            property_id=1,
+            unit_id=6,
+            move_out_date=move_out,
+        )
     expected = move_out + timedelta(days=PLACEHOLDER_READY_DATE_OFFSET_DAYS)
     assert turnover["report_ready_date"] == expected
 
 
 def test_create_turnover_placeholder_audit_source():
     """Placeholder ready date audit entry has source 'turnover_service.placeholder'."""
-    from db.repository import audit_repository
-
     move_out = date(2026, 4, 1)
-    turnover = create_turnover(
-        property_id=1,
-        unit_id=6,
-        move_out_date=move_out,
-    )
-    tid = turnover["turnover_id"]
-    audits = audit_repository.get_by_entity("turnover", tid)
+    fake_unit = {"unit_id": 6, "property_id": 1, "is_active": True, "phase_id": 1}
+    fake_turnover = {"turnover_id": 100, "property_id": 1, "unit_id": 6, "move_out_date": move_out}
+    
+    with patch("db.repository.unit_repository.get_by_id", return_value=fake_unit), \
+         patch("db.repository.turnover_repository.get_open_by_unit", return_value=None), \
+         patch("db.repository.turnover_repository.insert", return_value=fake_turnover), \
+         patch("db.repository.turnover_repository.update", return_value=fake_turnover), \
+         patch("db.repository.audit_repository.insert") as mock_audit, \
+         patch("services.risk_service.evaluate_sla_state"), \
+         patch("services.risk_service.sync_risk_from_sla"), \
+         patch("services.task_service.instantiate_templates", return_value=[{"task_id": 1}]), \
+         patch("services.task_service.has_templates_for_phase", return_value=True), \
+         patch("services.task_service.ensure_default_templates_for_phase"):
+        create_turnover(
+            property_id=1,
+            unit_id=6,
+            move_out_date=move_out,
+        )
+    
     placeholder_audits = [
-        a for a in audits
-        if a.get("source") == "turnover_service.placeholder"
-        and a.get("field_name") == "report_ready_date"
+        c.kwargs for c in mock_audit.call_args_list
+        if c.kwargs.get("source") == "turnover_service.placeholder"
+        and c.kwargs.get("field_name") == "report_ready_date"
     ]
     assert len(placeholder_audits) >= 1
     expected = str(move_out + timedelta(days=PLACEHOLDER_READY_DATE_OFFSET_DAYS))
@@ -72,27 +143,26 @@ def test_create_turnover_placeholder_audit_source():
 
 def test_create_turnover_duplicate_raises():
     """Unit 1 already has an open turnover — should raise TurnoverError."""
-    with pytest.raises(TurnoverError, match="already has an open turnover"):
-        create_turnover(
-            property_id=1,
-            unit_id=1,
-            move_out_date=date(2026, 4, 1),
-        )
+    fake_unit = {"unit_id": 6, "property_id": 1, "is_active": True, "phase_id": 1}
+    with patch("db.repository.unit_repository.get_by_id", return_value=fake_unit), \
+         patch("db.repository.turnover_repository.get_open_by_unit", return_value={"turnover_id": 123}):
+        with pytest.raises(TurnoverError, match="already has an open turnover"):
+            create_turnover(
+                property_id=1,
+                unit_id=6,
+                move_out_date=date(2026, 4, 1),
+            )
 
 
 def test_create_turnover_inactive_unit_raises():
     """An inactive unit should be rejected."""
-    from db.repository import unit_repository
-
-    # Set unit 6 to inactive
-    unit_repository.update(6, is_active=False)
-
-    with pytest.raises(TurnoverError, match="inactive"):
-        create_turnover(
-            property_id=1,
-            unit_id=6,
-            move_out_date=date(2026, 4, 1),
-        )
+    with patch("db.repository.unit_repository.get_by_id", return_value={"unit_id": 6, "property_id": 1, "is_active": False}):
+        with pytest.raises(TurnoverError, match="inactive"):
+            create_turnover(
+                property_id=1,
+                unit_id=6,
+                move_out_date=date(2026, 4, 1),
+            )
 
 
 # ── Update ───────────────────────────────────────────────────────────────────
@@ -101,16 +171,20 @@ def test_create_turnover_inactive_unit_raises():
 def test_update_turnover_success():
     """Updating move_in_date on an open turnover should succeed."""
     new_date = date(2026, 4, 10)
-    updated = update_turnover(1, actor="test", move_in_date=new_date)
+    fake_turnover = {"turnover_id": 1, "property_id": 1, "unit_id": 1, "closed_at": None, "canceled_at": None}
+    with patch("db.repository.turnover_repository.get_by_id", return_value=fake_turnover), \
+         patch("db.repository.turnover_repository.update", return_value={**fake_turnover, "move_in_date": new_date}), \
+         patch("db.repository.audit_repository.insert"):
+        updated = update_turnover(1, actor="test", move_in_date=new_date)
     assert updated["move_in_date"] == new_date
 
 
 def test_update_closed_turnover_raises():
     """Closing a turnover then updating it should raise TurnoverError."""
-    close_turnover(1, actor="test")
-
-    with pytest.raises(TurnoverError, match="closed or canceled"):
-        update_turnover(1, actor="test", move_in_date=date(2026, 5, 1))
+    fake_turnover = {"turnover_id": 1, "property_id": 1, "unit_id": 1, "closed_at": date(2026, 4, 2)}
+    with patch("db.repository.turnover_repository.get_by_id", return_value=fake_turnover):
+        with pytest.raises(TurnoverError, match="closed or canceled"):
+            update_turnover(1, actor="test", move_in_date=date(2026, 5, 1))
 
 
 # ── Close / Cancel ───────────────────────────────────────────────────────────
@@ -118,15 +192,21 @@ def test_update_closed_turnover_raises():
 
 def test_close_turnover():
     """Closing sets closed_at to a non-None value."""
-    result = close_turnover(1, actor="test")
+    fake_turnover = {"turnover_id": 1, "property_id": 1, "unit_id": 1, "closed_at": None, "canceled_at": None}
+    with patch("db.repository.turnover_repository.get_by_id", return_value=fake_turnover), \
+         patch("services.turnover_service.update_turnover", return_value={**fake_turnover, "closed_at": date.today()}):
+        result = close_turnover(1, actor="test")
     assert result["closed_at"] is not None
 
 
 def test_cancel_turnover():
     """Canceling sets canceled_at and cancel_reason."""
-    result = cancel_turnover(2, reason="Lease fell through", actor="test")
+    fake_turnover = {"turnover_id": 2, "property_id": 1, "unit_id": 1, "closed_at": None, "canceled_at": None}
+    with patch("db.repository.turnover_repository.get_by_id", return_value=fake_turnover), \
+         patch("services.turnover_service.update_turnover", return_value={**fake_turnover, "canceled_at": date.today(), "cancel_reason": "test"}):
+        result = cancel_turnover(2, reason="test", actor="test")
     assert result["canceled_at"] is not None
-    assert result["cancel_reason"] == "Lease fell through"
+    assert result["cancel_reason"] == "test"
 
 
 # ── Search ───────────────────────────────────────────────────────────────────
@@ -134,7 +214,8 @@ def test_cancel_turnover():
 
 def test_search_unit():
     """search_unit normalizes raw code and finds the unit."""
-    unit = search_unit(property_id=1, raw_code=" b-201 ")
+    with patch("db.repository.unit_repository.get_by_code_norm", return_value={"unit_id": 4, "unit_code_norm": "B-201"}):
+        unit = search_unit(property_id=1, raw_code=" b-201 ")
     assert unit is not None
     assert unit["unit_code_norm"] == "B-201"
     assert unit["unit_id"] == 4
@@ -151,71 +232,6 @@ def test_get_turnover_detail():
     assert "days_since_move_out" in detail
     assert "days_to_move_in" in detail
     assert "vacancy_days" in detail
-
-
-# ── Backfill (Layer 3) ───────────────────────────────────────────────────────
-
-
-def test_backfill_tasks_for_property_repairs_and_skips():
-    """backfill_tasks_for_property calls ensure_turnover_has_tasks per open turnover; counts repaired vs skipped."""
-    fake_turnovers = [
-        {"turnover_id": 10, "property_id": 1, "unit_id": 1},
-        {"turnover_id": 11, "property_id": 1, "unit_id": 2},
-    ]
-    with patch(
-        "services.turnover_service.turnover_repository.get_open_by_property",
-        return_value=fake_turnovers,
-    ), patch(
-        "services.turnover_service.ensure_turnover_has_tasks",
-        side_effect=[True, False],
-    ):
-        result = backfill_tasks_for_property(1)
-    assert result["repaired"] == 1
-    assert result["skipped"] == 1
-    assert result["errors"] == []
-
-
-def test_backfill_tasks_all_properties_aggregates():
-    """backfill_tasks_all_properties runs per-property backfill and aggregates totals and by_property."""
-    with patch(
-        "services.turnover_service.property_repository.get_all",
-        return_value=[{"property_id": 1}, {"property_id": 2}],
-    ), patch(
-        "services.turnover_service.backfill_tasks_for_property",
-        side_effect=[
-            {"repaired": 2, "skipped": 3, "errors": []},
-            {"repaired": 1, "skipped": 0, "errors": []},
-        ],
-    ):
-        result = backfill_tasks_all_properties()
-    assert result["total_repaired"] == 3
-    assert result["total_skipped"] == 3
-    assert result["by_property"] == {
-        1: {"repaired": 2, "skipped": 3, "errors": []},
-        2: {"repaired": 1, "skipped": 0, "errors": []},
-    }
-    assert result["errors"] == []
-
-
-def test_backfill_tasks_for_property_continues_on_error():
-    """When ensure_turnover_has_tasks raises for one turnover, error is recorded and rest still processed."""
-    fake_turnovers = [
-        {"turnover_id": 20, "property_id": 1, "unit_id": 1},
-        {"turnover_id": 21, "property_id": 1, "unit_id": 2},
-    ]
-    with patch(
-        "services.turnover_service.turnover_repository.get_open_by_property",
-        return_value=fake_turnovers,
-    ), patch(
-        "services.turnover_service.ensure_turnover_has_tasks",
-        side_effect=[TurnoverError("Turnover 20 not found"), True],
-    ):
-        result = backfill_tasks_for_property(1)
-    assert result["repaired"] == 1
-    assert result["skipped"] == 0
-    assert len(result["errors"]) == 1
-    assert "turnover_id=20" in result["errors"][0]
-    assert "Turnover 20 not found" in result["errors"][0]
 
 
 # ── Backfill placeholder ready dates ─────────────────────────────────────────

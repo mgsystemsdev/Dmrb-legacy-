@@ -214,3 +214,18 @@ def ensure_database_ready() -> None:
         if not cursor.fetchone()[0]:
             migration_014 = (_MIGRATIONS_DIR / "014_lifecycle_event.sql").read_text(encoding="utf-8")
             cursor.execute(migration_014)
+        # Apply migration 015 (task_fsm) if skip_allowed column is absent from task
+        cursor.execute(
+            """
+            SELECT EXISTS (
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND table_name = 'task'
+                  AND column_name = 'skip_allowed'
+            )
+            """
+        )
+        if not cursor.fetchone()[0]:
+            migration_015 = (_MIGRATIONS_DIR / "015_task_fsm.sql").read_text(encoding="utf-8")
+            cursor.execute(migration_015)

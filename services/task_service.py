@@ -18,6 +18,63 @@ class TaskError(Exception):
     pass
 
 
+# ── Task Finite State Machine (FSM) ──────────────────────────────────────────
+
+# Allowed execution statuses
+STATUS_SCHEDULED = "SCHEDULED"
+STATUS_IN_PROGRESS = "IN_PROGRESS"
+STATUS_COMPLETE = "COMPLETE"
+STATUS_SKIPPED = "SKIPPED"
+STATUS_BLOCKED = "BLOCKED"
+
+ALLOWED_STATUSES = {
+    STATUS_SCHEDULED,
+    STATUS_IN_PROGRESS,
+    STATUS_COMPLETE,
+    STATUS_SKIPPED,
+    STATUS_BLOCKED,
+}
+
+# Allowed transitions: old_status -> list of new_statuses
+ALLOWED_TRANSITIONS = {
+    STATUS_SCHEDULED: [STATUS_IN_PROGRESS, STATUS_SKIPPED],
+    STATUS_IN_PROGRESS: [STATUS_COMPLETE, STATUS_BLOCKED, STATUS_SKIPPED],
+    STATUS_BLOCKED: [STATUS_IN_PROGRESS],
+    # Terminal states (COMPLETE, SKIPPED) usually don't transition out in strict FSM,
+    # but we might allow re-opening for correction if needed.
+    # For now, following user's strict list.
+}
+
+
+def validate_status_transition(task: dict, new_status: str, blocked_reason: str | None = None) -> None:
+    """Validate that the task can move from its current status to new_status.
+
+    Enforces:
+    - Reject any invalid transition.
+    - BLOCKED requires blocked_reason.
+    - SKIPPED requires task['skip_allowed'] == True.
+    """
+    old_status = task["execution_status"]
+    if old_status == new_status:
+        return
+
+    if new_status not in ALLOWED_STATUSES:
+        raise TaskError(f"Invalid status: {new_status}")
+
+    allowed = ALLOWED_TRANSITIONS.get(old_status, [])
+    if new_status not in allowed:
+        raise TaskError(
+            f"Invalid transition from {old_status} to {new_status}. "
+            f"Allowed: {', '.join(allowed) if allowed else 'None'}"
+        )
+
+    if new_status == STATUS_BLOCKED and not blocked_reason:
+        raise TaskError("Status BLOCKED requires a blocked_reason.")
+
+    if new_status == STATUS_SKIPPED and not task.get("skip_allowed"):
+        raise TaskError(f"Task type '{task['task_type']}' is not allowed to be skipped.")
+
+
 # Default pipeline templates for new phases — must stay aligned with
 # db/migrations/007_seed_task_templates.sql (task_type, offset_days, sort_order).
 _DEFAULT_PIPELINE_TEMPLATES: tuple[tuple[str, int, int], ...] = (
@@ -79,6 +136,7 @@ def create_task(
     vendor_due_date: date | None = None,
     required: bool = True,
     blocking: bool = True,
+    skip_allowed: bool = False,
     assignee: str | None = None,
     actor: str = "system",
 ) -> dict:
@@ -98,6 +156,7 @@ def create_task(
         vendor_due_date=vendor_due_date,
         required=required,
         blocking=blocking,
+        skip_allowed=skip_allowed,
         assignee=assignee,
     )
     audit_repository.insert(
@@ -118,29 +177,37 @@ def update_task(
     actor: str = "system",
     **fields,
 ) -> dict:
+    from datetime import timezone
+
     check_writes_enabled()
     existing = task_repository.get_by_id(task_id)
     if existing is None:
         raise TaskError(f"Task {task_id} not found.")
 
-    # When execution status becomes COMPLETED, ensure vendor_completed_at is set
-    if fields.get("execution_status") == "COMPLETED" and "vendor_completed_at" not in fields:
-        if existing.get("vendor_completed_at") is None:
-            fields = {**fields, "vendor_completed_at": datetime.utcnow()}
+    # Enforce FSM transition rules if status is changing
+    new_status = fields.get("execution_status")
+    if new_status and new_status != existing["execution_status"]:
+        blocked_reason = fields.get("blocked_reason") or existing.get("blocked_reason")
+        validate_status_transition(existing, new_status, blocked_reason)
 
-    # When execution status becomes COMPLETED, stamp completed_date if empty (never overwrite)
+    # When execution status becomes COMPLETE, ensure vendor_completed_at is set
+    if fields.get("execution_status") == STATUS_COMPLETE and "vendor_completed_at" not in fields:
+        if existing.get("vendor_completed_at") is None:
+            fields = {**fields, "vendor_completed_at": datetime.now(tz=timezone.utc)}
+
+    # When execution status becomes COMPLETE, stamp completed_date if empty (never overwrite)
     if (
-        fields.get("execution_status") == "COMPLETED"
+        fields.get("execution_status") == STATUS_COMPLETE
         and "completed_date" not in fields
         and existing.get("completed_date") is None
     ):
         fields = {**fields, "completed_date": date.today()}
 
-    # When execution status changes from COMPLETED to any other status, clear completed_date
+    # When execution status changes from COMPLETE to any other status, clear completed_date
     if (
-        existing.get("execution_status") == "COMPLETED"
+        existing.get("execution_status") == STATUS_COMPLETE
         and fields.get("execution_status") is not None
-        and fields.get("execution_status") != "COMPLETED"
+        and fields.get("execution_status") != STATUS_COMPLETE
     ):
         fields = {**fields, "completed_date": None}
 
@@ -163,18 +230,20 @@ def update_task(
 
 
 def complete_task(task_id: int, actor: str = "system") -> dict:
+    from datetime import timezone
+
     check_writes_enabled()
     existing = task_repository.get_by_id(task_id)
     if existing is None:
         raise TaskError(f"Task {task_id} not found.")
-    if existing["execution_status"] == "COMPLETED":
+    if existing["execution_status"] == STATUS_COMPLETE:
         raise TaskError(f"Task {task_id} is already completed.")
 
     return update_task(
         task_id,
         actor=actor,
-        execution_status="COMPLETED",
-        vendor_completed_at=datetime.utcnow(),
+        execution_status=STATUS_COMPLETE,
+        vendor_completed_at=datetime.now(tz=timezone.utc),
     )
 
 
@@ -200,6 +269,7 @@ def ensure_default_templates_for_phase(property_id: int, phase_id: int) -> int:
             sort_order=sort_order,
             required=True,
             blocking=True,
+            skip_allowed=False,
         )
         if row is not None:
             inserted += 1
@@ -229,6 +299,7 @@ def instantiate_templates(
             vendor_due_date=due,
             required=tmpl["required"],
             blocking=tmpl["blocking"],
+            skip_allowed=tmpl["skip_allowed"],
             actor=actor,
         )
         created.append(task)
