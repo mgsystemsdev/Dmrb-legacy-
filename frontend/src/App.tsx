@@ -32,6 +32,12 @@ function AuthBootstrap() {
   }, [bootstrapQuery.isSuccess, bootstrapQuery.data?.needs_bootstrap, clearSession]);
 
   useEffect(() => {
+    if (bootstrapQuery.isError) {
+      clearSession();
+    }
+  }, [bootstrapQuery.isError, clearSession]);
+
+  useEffect(() => {
     if (!bootstrapQuery.isSuccess || bootstrapQuery.data?.needs_bootstrap) {
       return;
     }
