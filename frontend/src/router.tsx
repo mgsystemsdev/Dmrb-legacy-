@@ -11,6 +11,7 @@ import { OperationsSchedulePage } from "./pages/OperationsSchedulePage";
 import { ReportOperationsPage } from "./pages/ReportOperationsPage";
 import { RiskRadarPage } from "./pages/RiskRadarPage";
 import { TurnoverDetailPage } from "./pages/TurnoverDetailPage";
+import { UnitMasterPage } from "./pages/UnitMasterPage";
 
 function AppLayout() {
   return (
@@ -46,6 +47,7 @@ export const router = createBrowserRouter([
       { path: "/turnovers/:turnoverId", element: <TurnoverDetailPage /> },
       { path: "/ai-agent", element: <AiAgentPage /> },
       { path: "/admin", element: <AdminPage /> },
+      { path: "/admin/unit-master", element: <UnitMasterPage /> },
     ],
   },
   {

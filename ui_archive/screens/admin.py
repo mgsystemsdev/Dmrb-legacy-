@@ -221,6 +221,11 @@ def _run_unit_master_import(property_id: int) -> None:
     strict = st.session_state.get("admin_um_strict", False)
     try:
         result = unit_service.import_unit_master(property_id, df, strict)
+    except UnitMasterImportError as exc:
+        st.error(f"Import rolled back — {len(exc.errors)} issue(s).")
+        for err in exc.errors:
+            st.warning(err)
+        return
     except WritesDisabledError as exc:
         st.warning(str(exc))
         return

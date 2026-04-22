@@ -72,6 +72,12 @@ def get_buildings(phase_id: int) -> list[dict]:
         return cur.fetchall()
 
 
+def get_building_by_id(building_id: int) -> dict | None:
+    with get_connection() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute("SELECT * FROM building WHERE building_id = %s", (building_id,))
+        return cur.fetchone()
+
+
 def insert_building(
     property_id: int,
     phase_id: int,

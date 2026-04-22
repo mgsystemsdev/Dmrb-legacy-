@@ -10,12 +10,25 @@ def get_all_properties() -> list[dict]:
     return property_repository.get_all()
 
 
+def get_property_by_id(property_id: int) -> dict | None:
+    """Return the property row or None if missing."""
+    return property_repository.get_by_id(property_id)
+
+
 def get_phases(property_id: int) -> list[dict]:
     return property_repository.get_phases(property_id)
 
 
 def get_buildings(phase_id: int) -> list[dict]:
     return property_repository.get_buildings(phase_id)
+
+
+def get_phase_by_id(phase_id: int) -> dict | None:
+    return property_repository.get_phase_by_id(phase_id)
+
+
+def get_building_by_id(building_id: int) -> dict | None:
+    return property_repository.get_building_by_id(building_id)
 
 
 def get_units_by_building(
