@@ -94,7 +94,7 @@ def test_board_sorted_by_priority():
 def test_board_metrics_counts():
     """Metrics include active count; when using same scope, active matches board length."""
     from services import scope_service
-    phase_scope = scope_service.get_phase_scope(1)
+    phase_scope = scope_service.get_phase_scope(0, 1)
     board = get_board(property_id=1, phase_scope=phase_scope)
     metrics = get_board_metrics(property_id=1, phase_scope=phase_scope)
     assert metrics["active"] == len(board)
@@ -442,7 +442,6 @@ def test_guard_rail_cancelled_turnover_produces_no_violations():
 
 def test_guard_rail_normal_turnover_still_evaluated():
     """Normal turnover (with move-out, not cancelled, not Vacant Ready) runs full pipeline."""
-    from domain.readiness import BLOCKED
     turnover = {
         "turnover_id": 104,
         "property_id": 1,

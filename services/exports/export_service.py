@@ -122,11 +122,12 @@ def build_weekly_summary_text(
     today: date | None = None,
     phase_scope: list[int] | None = None,
     board: list | None = None,
+    user_id: int = 0,
 ) -> str:
     """Plain-text weekly summary from a single board load + shared metrics."""
     today = today or date.today()
     if phase_scope is None:
-        phase_scope = scope_service.get_phase_scope(property_id)
+        phase_scope = scope_service.get_phase_scope(user_id, property_id)
     if board is None:
         board = board_service.get_board(property_id, today=today, phase_scope=phase_scope)
     metrics = board_service.get_board_metrics(property_id=property_id, board=board)
@@ -293,9 +294,10 @@ def build_weekly_summary_bytes(
     today: date | None = None,
     phase_scope: list[int] | None = None,
     board: list | None = None,
+    user_id: int = 0,
 ) -> bytes:
     return build_weekly_summary_text(
-        property_id, today=today, phase_scope=phase_scope, board=board
+        property_id, today=today, phase_scope=phase_scope, board=board, user_id=user_id
     ).encode("utf-8")
 
 
@@ -305,6 +307,7 @@ def build_export_turnovers(
     phase_scope: list[int] | None = None,
     *,
     board: list | None = None,
+    user_id: int = 0,
 ) -> list[dict]:
     """Flatten the board into export-ready rows. One dict per open turnover.
 
@@ -313,7 +316,7 @@ def build_export_turnovers(
     """
     today = today or date.today()
     if phase_scope is None:
-        phase_scope = scope_service.get_phase_scope(property_id)
+        phase_scope = scope_service.get_phase_scope(user_id, property_id)
     if board is None:
         board = board_service.get_board(property_id, today=today, phase_scope=phase_scope)
     if not board:

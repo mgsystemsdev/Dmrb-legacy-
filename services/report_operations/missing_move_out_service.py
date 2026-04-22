@@ -18,7 +18,7 @@ from services.write_guard import check_writes_enabled
 logger = logging.getLogger(__name__)
 
 
-def reconcile_pending_move_ins(property_id: int) -> int:
+def reconcile_pending_move_ins(property_id: int, user_id: int = 0) -> int:
     """Auto-resolve stale CONFLICT rows whose unit now has an open turnover with move_out_date.
 
     For each unresolved MOVE_IN_WITHOUT_OPEN_TURNOVER row:
@@ -29,7 +29,7 @@ def reconcile_pending_move_ins(property_id: int) -> int:
     Returns the number of rows resolved.
     """
     check_writes_enabled()
-    phase_ids = scope_service.get_phase_scope(property_id)
+    phase_ids = scope_service.get_phase_scope(user_id, property_id)
     rows = import_repository.get_missing_move_out_rows(property_id, phase_ids=phase_ids)
     resolved = 0
 
@@ -64,9 +64,9 @@ def reconcile_pending_move_ins(property_id: int) -> int:
     return resolved
 
 
-def list_missing_move_outs(property_id: int) -> list[dict]:
+def list_missing_move_outs(property_id: int, user_id: int = 0) -> list[dict]:
     """Return unresolved missing-move-out exception rows for units in the active phase scope."""
-    phase_ids = scope_service.get_phase_scope(property_id)
+    phase_ids = scope_service.get_phase_scope(user_id, property_id)
     return import_repository.get_missing_move_out_rows(property_id, phase_ids=phase_ids)
 
 

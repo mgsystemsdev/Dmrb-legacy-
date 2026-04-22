@@ -7,12 +7,13 @@ import {
   useAdminUsers,
   usePropertyStructure,
 } from "../api/useOperations";
+import { usePhaseScopeForProperty, usePropertyPhases, useUpdatePhaseScope } from "../api/usePhaseScope";
 import { PageShell } from "../components/PageShell";
 import { PropertySelector } from "../components/PropertySelector";
 import { SectionCard } from "../components/SectionCard";
 import { usePropertyStore } from "../stores/useProperty";
 
-type AdminTab = "system" | "turnover" | "structure" | "users";
+type AdminTab = "system" | "turnover" | "structure" | "phases" | "users";
 
 export function AdminPage() {
   const queryClient = useQueryClient();
@@ -101,6 +102,7 @@ export function AdminPage() {
     { key: "system", label: "System" },
     { key: "turnover", label: "Add Turnover" },
     { key: "structure", label: "Property Structure" },
+    { key: "phases", label: "Phase Manager" },
     { key: "users", label: "Users" },
   ];
 
@@ -204,6 +206,8 @@ export function AdminPage() {
         </SectionCard>
       ) : null}
 
+      {activeTab === "phases" ? <PhaseManagerSection propertyId={propertyId} /> : null}
+
       {activeTab === "users" ? (
         <div className="grid gap-6 xl:grid-cols-2">
           <SectionCard title="Create User">
@@ -253,6 +257,108 @@ export function AdminPage() {
         </div>
       ) : null}
     </PageShell>
+  );
+}
+
+function PhaseManagerSection({ propertyId }: { propertyId: number | null }) {
+  const phasesQuery = usePropertyPhases(propertyId);
+  const scopeQuery = usePhaseScopeForProperty(propertyId);
+  const updateScope = useUpdatePhaseScope();
+  const [selectedPhaseIds, setSelectedPhaseIds] = useState<number[]>([]);
+
+  const serverSignature =
+    scopeQuery.data?.phase_ids.slice().sort((a, b) => a - b).join(",") ?? "";
+
+  useEffect(() => {
+    if (propertyId == null) {
+      setSelectedPhaseIds([]);
+      return;
+    }
+    if (scopeQuery.isSuccess && scopeQuery.data) {
+      setSelectedPhaseIds([...scopeQuery.data.phase_ids].sort((a, b) => a - b));
+    }
+  }, [propertyId, scopeQuery.isSuccess, serverSignature]);
+
+  if (propertyId == null) {
+    return (
+      <SectionCard
+        title="Phase Manager"
+        description="Choose a property in the header to set which phases are included in your operational view."
+      >
+        <p className="text-sm text-muted">No property selected.</p>
+      </SectionCard>
+    );
+  }
+
+  const loadError = phasesQuery.error ?? scopeQuery.error;
+  const loading = phasesQuery.isPending || scopeQuery.isPending;
+  const phases = phasesQuery.data;
+
+  const togglePhase = (phaseId: number) => {
+    setSelectedPhaseIds((prev) => {
+      const set = new Set(prev);
+      if (set.has(phaseId)) {
+        set.delete(phaseId);
+      } else {
+        set.add(phaseId);
+      }
+      return [...set].sort((a, b) => a - b);
+    });
+  };
+
+  return (
+    <SectionCard
+      title="Phase Manager"
+      description="Check the phases to include in the board and related tools for this property, then save. Uses your account’s saved scope on the server."
+    >
+      {loadError ? (
+        <p className="text-sm text-rose-400" role="alert">
+          {loadError instanceof Error ? loadError.message : "Failed to load data"}
+        </p>
+      ) : null}
+      {loading ? <p className="text-sm text-muted">Loading…</p> : null}
+      {!loading && !loadError && phases && phases.length === 0 ? (
+        <p className="text-sm text-muted">No phases exist for this property yet.</p>
+      ) : null}
+      {!loading && !loadError && phases && phases.length > 0 ? (
+        <div className="space-y-4">
+          <ul className="space-y-2">
+            {phases.map((phase) => (
+              <li key={phase.phase_id}>
+                <label className="flex cursor-pointer items-center gap-3 text-sm text-text">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border border-border"
+                    checked={selectedPhaseIds.includes(phase.phase_id)}
+                    onChange={() => togglePhase(phase.phase_id)}
+                  />
+                  <span className="font-medium text-text-strong">
+                    {phase.name ?? phase.phase_code}
+                  </span>
+                  <span className="text-muted">({phase.phase_code})</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={updateScope.isPending}
+            onClick={() => {
+              updateScope.mutate(
+                { propertyId, phaseIds: selectedPhaseIds },
+                {
+                  onSuccess: () => toast.success("Phase scope saved"),
+                  onError: (err) => toast.error(err instanceof Error ? err.message : "Save failed"),
+                },
+              );
+            }}
+          >
+            {updateScope.isPending ? "Saving…" : "Save"}
+          </button>
+        </div>
+      ) : null}
+    </SectionCard>
   );
 }
 

@@ -57,15 +57,15 @@ def _import_timestamp_is_today(ts: str, today: date) -> bool:
         return False
 
 
-def _render_top_actions(property_id: int, today: date, phase_scope: list[int]) -> None:
+def _render_top_actions(property_id: int, today: date, phase_scope: list[int], user_id: int) -> None:
     """Highest-priority directives from existing board summary + missing move-out list (no new services)."""
     summary = board_service.get_board_summary(
-        property_id, today=today, phase_scope=phase_scope
+        property_id, today=today, phase_scope=phase_scope, user_id=user_id
     )
     bp = summary.get("by_priority") or {}
     crit = int(bp.get("MOVE_IN_DANGER", 0))
     urgent = int(bp.get("SLA_RISK", 0))
-    has_missing = bool(missing_move_out_service.list_missing_move_outs(property_id))
+    has_missing = bool(missing_move_out_service.list_missing_move_outs(property_id, user_id=user_id))
 
     messages: list[str] = []
     if crit > 0:
@@ -111,10 +111,10 @@ def _render_top_actions(property_id: int, today: date, phase_scope: list[int]) -
 
 
 def _render_yesterdays_work(
-    property_id: int, today: date, phase_scope: list[int]
+    property_id: int, today: date, phase_scope: list[int], user_id: int
 ) -> None:
     rows = task_service.get_yesterday_completions(
-        property_id, phase_scope=phase_scope, today=today
+        property_id, phase_scope=phase_scope, today=today, user_id=user_id
     )
     with st.container(border=True):
         st.markdown("**Yesterday's Work — verify completion**")
@@ -155,9 +155,11 @@ def _todays_work_column_count(n_types: int) -> int:
 
 
 def _render_todays_work(
-    property_id: int, today: date, phase_scope: list[int]
+    property_id: int, today: date, phase_scope: list[int], user_id: int
 ) -> None:
-    rows = task_service.get_schedule_rows(property_id, phase_scope=phase_scope)
+    rows = task_service.get_schedule_rows(
+        property_id, phase_scope=phase_scope, user_id=user_id
+    )
     due = [r for r in rows if _task_due_today(r, today)]
     with st.container(border=True):
         st.markdown("**Today's Work — execute**")
@@ -210,13 +212,14 @@ def render_morning_workflow() -> None:
     st.caption(f"Active Property: **{_property_name(property_id)}**")
 
     today = date.today()
-    phase_scope = scope_service.get_phase_scope(property_id)
+    uid = int(st.session_state.get("user_id") or 0)
+    phase_scope = scope_service.get_phase_scope(uid, property_id)
 
     # ── Top actions (compose from board summary + missing move-out queue) ─
-    _render_top_actions(property_id, today, phase_scope)
+    _render_top_actions(property_id, today, phase_scope, uid)
 
     # ── Yesterday's completions (single query; grouped by unit) ──────────
-    _render_yesterdays_work(property_id, today, phase_scope)
+    _render_yesterdays_work(property_id, today, phase_scope, uid)
 
     # ── Ops Schedule handoff (after triage) ───────────────────────────────
     _render_plan_todays_work_nav()
@@ -225,22 +228,22 @@ def render_morning_workflow() -> None:
     _render_import_status(property_id)
 
     # ── Board priority summary (same counts as board by priority tier) ─
-    _render_board_priority_summary(property_id, today, phase_scope)
+    _render_board_priority_summary(property_id, today, phase_scope, uid)
 
     # ── Risk metrics bar ─────────────────────────────────────────────────
-    _render_risk_metrics(property_id, phase_scope)
+    _render_risk_metrics(property_id, phase_scope, uid)
 
     # ── Missing move-out table ───────────────────────────────────────────
-    _render_missing_move_out(property_id, today)
+    _render_missing_move_out(property_id, today, uid)
 
     # ── Today's critical units table ─────────────────────────────────────
     critical = board_service.get_todays_critical_units(
-        property_id, today=today, phase_scope=phase_scope
+        property_id, today=today, phase_scope=phase_scope, user_id=uid
     )
     _render_todays_critical(critical)
 
     # ── Today's due tasks (last row; same rows as Ops Schedule) ───────────
-    _render_todays_work(property_id, today, phase_scope)
+    _render_todays_work(property_id, today, phase_scope, uid)
 
 
 # ── Import status bar ────────────────────────────────────────────────────────
@@ -265,11 +268,11 @@ def _render_import_status(property_id: int) -> None:
 # ── Board priority summary ───────────────────────────────────────────────────
 
 def _render_board_priority_summary(
-    property_id: int, today: date, phase_scope: list[int]
+    property_id: int, today: date, phase_scope: list[int], user_id: int
 ) -> None:
     """Show top board priority counts from get_board_summary (read-only; matches board page)."""
     summary = board_service.get_board_summary(
-        property_id, today=today, phase_scope=phase_scope
+        property_id, today=today, phase_scope=phase_scope, user_id=user_id
     )
     by_priority = summary.get("by_priority") or {}
     with st.container(border=True):
@@ -283,9 +286,11 @@ def _render_board_priority_summary(
 
 # ── Risk metrics bar ─────────────────────────────────────────────────────────
 
-def _render_risk_metrics(property_id: int, phase_scope: list[int]) -> None:
+def _render_risk_metrics(property_id: int, phase_scope: list[int], user_id: int) -> None:
     """Render risk metrics from board_service read model (no local computation)."""
-    metrics = board_service.get_morning_risk_metrics(property_id, phase_scope=phase_scope)
+    metrics = board_service.get_morning_risk_metrics(
+        property_id, phase_scope=phase_scope, user_id=user_id
+    )
     vacant_over_7 = metrics["vacant_over_7"]
     sla_breach = metrics["sla_breach"]
     move_in_soon = metrics["move_in_soon"]
@@ -308,9 +313,9 @@ def _render_risk_metrics(property_id: int, phase_scope: list[int]) -> None:
 
 # ── Missing move-out table ───────────────────────────────────────────────────
 
-def _render_missing_move_out(property_id: int, today: date) -> None:
+def _render_missing_move_out(property_id: int, today: date, user_id: int) -> None:
     focused = st.session_state.pop("mw_focus_repair_queue", None)
-    rows = missing_move_out_service.list_missing_move_outs(property_id)
+    rows = missing_move_out_service.list_missing_move_outs(property_id, user_id=user_id)
     if focused and rows:
         st.info("**Repair queue** — add move-out dates in the table below.")
     if not rows:

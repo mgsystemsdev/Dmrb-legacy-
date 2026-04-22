@@ -68,19 +68,24 @@ def get_units(
     phase_scope: list[int] | None = None,
     *,
     active_only: bool = True,
+    user_id: int = 0,
 ) -> list[dict]:
     """Return units for the property, optionally filtered by phase scope (operational view)."""
     if phase_scope is None:
-        phase_scope = scope_service.get_phase_scope(property_id)
+        phase_scope = scope_service.get_phase_scope(user_id, property_id)
     return unit_repository.get_by_property(
         property_id, active_only=active_only, phase_ids=phase_scope
     )
 
 
 def list_all_units_for_property(property_id: int, *, active_only: bool = True) -> list[dict]:
-    """Return all units for the property (ignores phase scope). Read-only."""
-    return unit_repository.get_by_property(
-        property_id, active_only=active_only, phase_ids=None,
+    """Return all units for the property (ignores phase scope). Read-only.
+
+    Includes ``unit_code``, ``phase_name``, and ``building_name`` for grid views.
+    """
+    return unit_repository.list_for_property_with_structure_labels(
+        property_id,
+        active_only=active_only,
     )
 
 

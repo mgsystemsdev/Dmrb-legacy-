@@ -49,7 +49,9 @@ def render_missing_move_out(property_id: int) -> None:
         "The row disappears once resolved."
     )
 
-    rows = missing_move_out_service.list_missing_move_outs(property_id)
+    rows = missing_move_out_service.list_missing_move_outs(
+        property_id, user_id=int(st.session_state.get("user_id") or 0)
+    )
 
     if not rows:
         st.info("No missing move-out exceptions for the active property.")
@@ -263,7 +265,9 @@ def render_fas_tracker(property_id: int) -> None:
         "then click **Save Changes** to persist."
     )
 
-    rows = import_service.get_fas_rows(property_id)
+    rows = import_service.get_fas_rows(
+        property_id, user_id=int(st.session_state.get("user_id") or 0)
+    )
 
     if not rows:
         st.info("No PENDING_FAS import rows for the active property.")

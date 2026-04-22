@@ -20,7 +20,7 @@ def main():
 
     property_id = 1
     today = date.today()
-    phase_scope = scope_service.get_phase_scope(property_id)
+    phase_scope = scope_service.get_phase_scope(0, property_id)
     board = board_service.get_board(property_id, today=today, phase_scope=phase_scope)
     if not board:
         print("DATA_CONSISTENCY: SKIP (no board items)")

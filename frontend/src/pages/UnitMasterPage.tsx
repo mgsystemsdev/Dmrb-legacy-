@@ -1,21 +1,19 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { ColDef } from "ag-grid-community";
+import type { ColDef, ValueFormatterParams } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 import axios from "axios";
 import { toast } from "sonner";
 import { api } from "../api/client";
-import { useUnitMasterUnits, type UnitMasterUnitRow } from "../api/useUnitMaster";
+import {
+  useCreateUnit,
+  useImportUnits,
+  useUnits,
+  type UnitRow,
+} from "../api/useUnitMaster";
 import { PageShell } from "../components/PageShell";
 import { PropertySelector } from "../components/PropertySelector";
 import { SectionCard } from "../components/SectionCard";
 import { usePropertyStore } from "../stores/useProperty";
-
-type ImportSuccessBody = {
-  success: boolean;
-  data: { created: number } | null;
-  errors: string[];
-};
 
 function formatAxiosMessage(error: unknown): string {
   if (axios.isAxiosError(error) && error.response?.data && typeof error.response.data === "object") {
@@ -36,62 +34,94 @@ function formatAxiosMessage(error: unknown): string {
   return "Request failed";
 }
 
+type UnitsGridRow = UnitRow & {
+  unit_id: number;
+  unit_code?: string | null;
+  phase_name?: string | null;
+  building_name?: string | null;
+  created_at?: string | null;
+};
+
+function formatCellDash(params: ValueFormatterParams): string {
+  const v = params.value;
+  if (v == null || v === "") {
+    return "—";
+  }
+  return String(v);
+}
+
+function formatCreatedAt(params: ValueFormatterParams): string {
+  const v = params.value as string | null | undefined;
+  if (!v) {
+    return "—";
+  }
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) {
+    return String(v);
+  }
+  return d.toLocaleString();
+}
+
 export function UnitMasterPage() {
-  const queryClient = useQueryClient();
   const propertyId = usePropertyStore((state) => state.propertyId);
   const [activeOnly, setActiveOnly] = useState(true);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [strictImport, setStrictImport] = useState(false);
+  const [quickSearch, setQuickSearch] = useState("");
 
-  const unitsQuery = useUnitMasterUnits(propertyId, activeOnly);
+  const unitsQuery = useUnits(propertyId, { activeOnly });
+  const importMutation = useImportUnits();
 
-  const invalidateUnits = () =>
-    queryClient.invalidateQueries({ queryKey: ["unit-master", propertyId] });
-
-  const importMutation = useMutation({
-    mutationFn: async () => {
-      if (!propertyId || !importFile) {
-        throw new Error("Select a property and a CSV file");
-      }
-      const form = new FormData();
-      form.append("property_id", String(propertyId));
-      form.append("strict", String(strictImport));
-      form.append("file", importFile);
-      const { data } = await api.post<ImportSuccessBody>("/unit-master/import", form);
-      return data;
-    },
-    onSuccess: async (data) => {
-      if (!data.success) {
-        toast.error(data.errors?.join("; ") || "Import failed");
-        return;
-      }
-      const created = data.data?.created ?? 0;
-      toast.success(`Import complete — ${created} unit(s) created`);
-      setImportFile(null);
-      await invalidateUnits();
-    },
-    onError: (error) => {
-      toast.error(formatAxiosMessage(error));
-    },
-  });
-
-  const colDefs = useMemo<ColDef<UnitMasterUnitRow>[]>(
+  const colDefs = useMemo<ColDef<UnitsGridRow>[]>(
     () => [
-      { field: "unit_id", headerName: "ID", width: 90, filter: true },
-      { field: "unit_code_norm", headerName: "Unit", minWidth: 110, filter: true },
-      { field: "unit_code_raw", headerName: "Raw code", minWidth: 110, filter: true },
-      { field: "phase_id", headerName: "Phase ID", width: 110 },
-      { field: "building_id", headerName: "Building ID", width: 120 },
-      { field: "floor_plan", headerName: "Floor plan", minWidth: 120, filter: true },
-      { field: "gross_sq_ft", headerName: "Sq ft", width: 100 },
-      { field: "has_carpet", headerName: "Carpet", width: 100 },
-      { field: "has_wd_expected", headerName: "W/D exp.", width: 100 },
-      { field: "is_active", headerName: "Active", width: 100 },
+      {
+        field: "unit_code",
+        headerName: "Unit code",
+        minWidth: 120,
+        flex: 1,
+        filter: "agTextColumnFilter",
+        valueFormatter: formatCellDash,
+      },
+      {
+        field: "phase_name",
+        headerName: "Phase",
+        minWidth: 140,
+        flex: 1,
+        filter: "agTextColumnFilter",
+        valueFormatter: formatCellDash,
+      },
+      {
+        field: "building_name",
+        headerName: "Building",
+        minWidth: 140,
+        flex: 1,
+        filter: "agTextColumnFilter",
+        valueFormatter: formatCellDash,
+      },
+      {
+        field: "created_at",
+        headerName: "Created at",
+        minWidth: 180,
+        flex: 1,
+        filter: "agTextColumnFilter",
+        valueFormatter: formatCreatedAt,
+      },
     ],
     [],
   );
 
-  const rowData = useMemo(() => unitsQuery.data ?? [], [unitsQuery.data]);
+  const defaultColDef = useMemo<ColDef<UnitsGridRow>>(
+    () => ({
+      sortable: true,
+      resizable: true,
+      filter: "agTextColumnFilter",
+      floatingFilter: true,
+      suppressHeaderMenuButton: false,
+    }),
+    [],
+  );
+
+  const rowData = useMemo(() => (unitsQuery.data ?? []) as UnitsGridRow[], [unitsQuery.data]);
 
   const listError = unitsQuery.isError
     ? formatAxiosMessage(unitsQuery.error)
@@ -142,43 +172,72 @@ export function UnitMasterPage() {
               <button
                 type="button"
                 className="btn-primary"
-                disabled={importMutation.isPending || !importFile}
-                onClick={() => importMutation.mutate()}
+                disabled={importMutation.isPending || !importFile || !propertyId}
+                onClick={() => {
+                  if (!propertyId || !importFile) {
+                    return;
+                  }
+                  importMutation.mutate(
+                    { propertyId, file: importFile, strict: strictImport },
+                    {
+                      onSuccess: (data) => {
+                        if (!data.success) {
+                          toast.error(data.errors?.join("; ") || "Import failed");
+                          return;
+                        }
+                        const created = data.data?.created ?? 0;
+                        toast.success(`Import complete — ${created} unit(s) created`);
+                        setImportFile(null);
+                      },
+                      onError: (error) => {
+                        toast.error(formatAxiosMessage(error));
+                      },
+                    },
+                  );
+                }}
               >
                 {importMutation.isPending ? "Importing…" : "Run import"}
               </button>
             </div>
           </SectionCard>
 
-          <ManualCreateUnitSection
-            propertyId={propertyId}
-            disabled={importMutation.isPending}
-            onCreated={async () => {
-              await invalidateUnits();
-            }}
-          />
+          <ManualCreateUnitSection propertyId={propertyId} disabled={importMutation.isPending} />
 
           <SectionCard title="Units" description="All units for the selected property (optionally include inactive).">
-            <label className="mb-4 flex items-center gap-2 text-sm text-text">
-              <input
-                type="checkbox"
-                checked={!activeOnly}
-                onChange={(event) => setActiveOnly(!event.target.checked)}
-              />
-              Include inactive units
-            </label>
+            <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+              <label className="flex items-center gap-2 text-sm text-text">
+                <input
+                  type="checkbox"
+                  checked={!activeOnly}
+                  onChange={(event) => setActiveOnly(!event.target.checked)}
+                />
+                Include inactive units
+              </label>
+              <label className="flex min-w-[240px] flex-1 flex-col gap-1 text-sm font-medium text-text sm:max-w-md">
+                <span className="label">Quick search</span>
+                <input
+                  type="search"
+                  className="input"
+                  placeholder="Filter rows…"
+                  value={quickSearch}
+                  onChange={(event) => setQuickSearch(event.target.value)}
+                  autoComplete="off"
+                />
+              </label>
+            </div>
             {listError ? (
               <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
                 {listError}
               </p>
             ) : null}
-            <div className="ag-theme-quartz-dark mt-4 h-[480px] w-full">
-              <AgGridReact<UnitMasterUnitRow>
+            <div className="ag-theme-quartz-dark mt-4 h-[520px] w-full">
+              <AgGridReact<UnitsGridRow>
                 rowData={rowData}
                 columnDefs={colDefs}
+                defaultColDef={defaultColDef}
                 loading={unitsQuery.isLoading}
                 animateRows
-                defaultColDef={{ sortable: true, resizable: true, filter: true }}
+                quickFilterText={quickSearch}
                 getRowId={(params) => String(params.data.unit_id)}
               />
             </div>
@@ -192,11 +251,9 @@ export function UnitMasterPage() {
 function ManualCreateUnitSection({
   propertyId,
   disabled,
-  onCreated,
 }: {
   propertyId: number;
   disabled: boolean;
-  onCreated: () => Promise<void>;
 }) {
   const [unitCode, setUnitCode] = useState("");
   const [phaseId, setPhaseId] = useState<number | null>(null);
@@ -238,44 +295,7 @@ function ManualCreateUnitSection({
       });
   }, [phaseId]);
 
-  const createMutation = useMutation({
-    mutationFn: async () => {
-      const code = unitCode.trim();
-      if (!code) {
-        throw new Error("Unit code is required");
-      }
-      const sq = grossSqFt.trim();
-      let gross: number | null = null;
-      if (sq !== "") {
-        const n = Number(sq);
-        if (Number.isNaN(n)) {
-          throw new Error("Gross sq ft must be a number");
-        }
-        gross = n;
-      }
-      await api.post(`/unit-master/?property_id=${propertyId}`, {
-        unit_code: code,
-        phase_id: phaseId,
-        building_id: buildingId,
-        floor_plan: floorPlan.trim() || null,
-        gross_sq_ft: gross,
-        has_carpet: hasCarpet,
-        has_wd_expected: hasWdExpected,
-      });
-    },
-    onSuccess: async () => {
-      toast.success("Unit created");
-      setUnitCode("");
-      setFloorPlan("");
-      setGrossSqFt("");
-      setHasCarpet(false);
-      setHasWdExpected(false);
-      await onCreated();
-    },
-    onError: (error) => {
-      toast.error(formatAxiosMessage(error));
-    },
-  });
+  const createUnit = useCreateUnit();
 
   return (
     <SectionCard title="Manual create" description="Add a single unit; optional phase and building placement.">
@@ -283,7 +303,48 @@ function ManualCreateUnitSection({
         className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
         onSubmit={(event: FormEvent) => {
           event.preventDefault();
-          createMutation.mutate();
+          const code = unitCode.trim();
+          if (!code) {
+            toast.error("Unit code is required");
+            return;
+          }
+          const sq = grossSqFt.trim();
+          let gross: number | null = null;
+          if (sq !== "") {
+            const n = Number(sq);
+            if (Number.isNaN(n)) {
+              toast.error("Gross sq ft must be a number");
+              return;
+            }
+            gross = n;
+          }
+          createUnit.mutate(
+            {
+              propertyId,
+              body: {
+                unit_code: code,
+                phase_id: phaseId,
+                building_id: buildingId,
+                floor_plan: floorPlan.trim() || null,
+                gross_sq_ft: gross,
+                has_carpet: hasCarpet,
+                has_wd_expected: hasWdExpected,
+              },
+            },
+            {
+              onSuccess: () => {
+                toast.success("Unit created");
+                setUnitCode("");
+                setFloorPlan("");
+                setGrossSqFt("");
+                setHasCarpet(false);
+                setHasWdExpected(false);
+              },
+              onError: (error) => {
+                toast.error(formatAxiosMessage(error));
+              },
+            },
+          );
         }}
       >
         <label className="flex flex-col gap-2 text-sm font-medium text-text">
@@ -293,7 +354,7 @@ function ManualCreateUnitSection({
             value={unitCode}
             onChange={(event) => setUnitCode(event.target.value)}
             required
-            disabled={disabled || createMutation.isPending}
+            disabled={disabled || createUnit.isPending}
           />
         </label>
         <label className="flex flex-col gap-2 text-sm font-medium text-text">
@@ -305,7 +366,7 @@ function ManualCreateUnitSection({
               const v = event.target.value;
               setPhaseId(v === "" ? null : Number(v));
             }}
-            disabled={disabled || createMutation.isPending}
+            disabled={disabled || createUnit.isPending}
           >
             <option value="">— None —</option>
             {phases.map((phase) => (
@@ -324,7 +385,7 @@ function ManualCreateUnitSection({
               const v = event.target.value;
               setBuildingId(v === "" ? null : Number(v));
             }}
-            disabled={disabled || createMutation.isPending || !phaseId}
+            disabled={disabled || createUnit.isPending || !phaseId}
           >
             <option value="">— None —</option>
             {buildings.map((building) => (
@@ -340,7 +401,7 @@ function ManualCreateUnitSection({
             className="input"
             value={floorPlan}
             onChange={(event) => setFloorPlan(event.target.value)}
-            disabled={disabled || createMutation.isPending}
+            disabled={disabled || createUnit.isPending}
           />
         </label>
         <label className="flex flex-col gap-2 text-sm font-medium text-text">
@@ -351,7 +412,7 @@ function ManualCreateUnitSection({
             min={0}
             value={grossSqFt}
             onChange={(event) => setGrossSqFt(event.target.value)}
-            disabled={disabled || createMutation.isPending}
+            disabled={disabled || createUnit.isPending}
           />
         </label>
         <div className="flex flex-col justify-end gap-3">
@@ -360,7 +421,7 @@ function ManualCreateUnitSection({
               type="checkbox"
               checked={hasCarpet}
               onChange={(event) => setHasCarpet(event.target.checked)}
-              disabled={disabled || createMutation.isPending}
+              disabled={disabled || createUnit.isPending}
             />
             Has carpet
           </label>
@@ -369,7 +430,7 @@ function ManualCreateUnitSection({
               type="checkbox"
               checked={hasWdExpected}
               onChange={(event) => setHasWdExpected(event.target.checked)}
-              disabled={disabled || createMutation.isPending}
+              disabled={disabled || createUnit.isPending}
             />
             W/D expected
           </label>
@@ -378,9 +439,9 @@ function ManualCreateUnitSection({
           <button
             type="submit"
             className="btn-primary"
-            disabled={disabled || createMutation.isPending || !unitCode.trim()}
+            disabled={disabled || createUnit.isPending || !unitCode.trim()}
           >
-            {createMutation.isPending ? "Creating…" : "Create unit"}
+            {createUnit.isPending ? "Creating…" : "Create unit"}
           </button>
         </div>
       </form>

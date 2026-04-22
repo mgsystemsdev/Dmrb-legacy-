@@ -107,13 +107,14 @@ def get_yesterday_completions(
     phase_scope: list[int] | None = None,
     *,
     today: date | None = None,
+    user_id: int = 0,
 ) -> list[dict]:
     """Tasks completed on the last business day, for morning verification."""
     from services import scope_service
 
     ref = _last_business_completion_date(today or date.today())
     if phase_scope is None:
-        phase_scope = scope_service.get_phase_scope(property_id)
+        phase_scope = scope_service.get_phase_scope(user_id, property_id)
     rows = task_repository.get_completed_on(
         property_id, ref, phase_ids=phase_scope
     )
@@ -309,6 +310,7 @@ def instantiate_templates(
 def get_schedule_rows(
     property_id: int,
     phase_scope: list[int] | None = None,
+    user_id: int = 0,
 ) -> list[dict]:
     """Return a flat list of schedule-ready task rows for a property.
 
@@ -320,7 +322,7 @@ def get_schedule_rows(
     from services import scope_service
 
     if phase_scope is None:
-        phase_scope = scope_service.get_phase_scope(property_id)
+        phase_scope = scope_service.get_phase_scope(user_id, property_id)
     turnovers = turnover_repository.get_open_by_property(property_id, phase_ids=phase_scope)
     if not turnovers:
         return []

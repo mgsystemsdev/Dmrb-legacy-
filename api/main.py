@@ -7,7 +7,20 @@ from fastapi.staticfiles import StaticFiles
 from itsdangerous import URLSafeTimedSerializer
 from api.middleware.request_id import RequestIDMiddleware
 from api.middleware.auth import AuthMiddleware
-from api.routers import auth, board, health, imports, notes, operations, properties, tasks, turnovers, unit_master, units
+from api.routers import (
+    auth,
+    board,
+    health,
+    imports,
+    notes,
+    operations,
+    phase_scope,
+    properties,
+    tasks,
+    turnovers,
+    unit_master,
+    units,
+)
 from api.schemas.auth import LoginRequest
 from services import auth_service
 from config.settings import SECRET_KEY, SESSION_COOKIE_SECURE
@@ -60,6 +73,7 @@ app.include_router(turnovers.router, prefix="/api", tags=["turnovers"])
 app.include_router(tasks.router, prefix="/api", tags=["tasks"])
 app.include_router(notes.router, prefix="/api", tags=["notes"])
 app.include_router(units.router, prefix="/api", tags=["units"])
+app.include_router(phase_scope.router, prefix="/api", tags=["phase-scope"])
 app.include_router(unit_master.router, prefix="/api")
 
 frontend_dist = Path("frontend/dist")

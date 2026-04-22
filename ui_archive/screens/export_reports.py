@@ -50,18 +50,20 @@ def render_export_reports() -> None:
             if st.button("Prepare Export Files", key="export_prepare", width="stretch"):
                 try:
                     today = date.today()
-                    phase_scope = scope_service.get_phase_scope(property_id)
+                    uid = int(st.session_state.get("user_id") or 0)
+                    phase_scope = scope_service.get_phase_scope(uid, property_id)
                     board = board_service.get_board(
                         property_id, today=today, phase_scope=phase_scope
                     )
                     metrics = board_service.get_board_metrics(
-                        property_id=property_id, board=board
+                        property_id=property_id, board=board, user_id=uid
                     )
                     rows = export_service.build_export_turnovers(
                         property_id,
                         today=today,
                         phase_scope=phase_scope,
                         board=board,
+                        user_id=uid,
                     )
                     st.session_state.weekly_summary_bytes = (
                         export_service.build_weekly_summary_bytes(
@@ -69,6 +71,7 @@ def render_export_reports() -> None:
                             today=today,
                             phase_scope=phase_scope,
                             board=board,
+                            user_id=uid,
                         )
                     )
                     st.session_state.final_report_bytes = export_excel.build_final_report(rows)
