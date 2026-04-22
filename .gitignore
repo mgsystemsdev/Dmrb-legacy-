@@ -7,3 +7,17 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+
+# Environment
+.venv/
+venv/
+ENV/
+
+# Build artifacts
+frontend/dist/
+frontend/node_modules/
+
+# Secrets and local files
+cookies.txt
+.DS_Store
+*.log
