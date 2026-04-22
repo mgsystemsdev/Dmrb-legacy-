@@ -17,6 +17,7 @@ from services import (
     import_service,
     property_service,
     risk_service,
+    scope_service,
     system_settings_service,
 )
 from services.ai.ai_agent_chat_service import (

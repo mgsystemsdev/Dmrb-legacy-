@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageShell } from "../components/PageShell";
 import { MetricGrid } from "../components/MetricGrid";
 import { PropertySelector } from "../components/PropertySelector";
 import { SectionCard } from "../components/SectionCard";
+import { useScopedPropertyPhases } from "../api/usePhaseScope";
 import { useFlagBridge } from "../api/useOperations";
 import { usePropertyStore } from "../stores/useProperty";
 import { formatDate } from "../lib/utils";
@@ -11,6 +12,7 @@ import { formatDate } from "../lib/utils";
 export function FlagBridgePage() {
   const navigate = useNavigate();
   const propertyId = usePropertyStore((state) => state.propertyId);
+  const { filteredPhases, isPending: phasesScopePending } = useScopedPropertyPhases(propertyId);
   const flagBridgeQuery = useFlagBridge(propertyId);
   const rows = flagBridgeQuery.data?.rows ?? [];
   const metrics = flagBridgeQuery.data?.metrics;
@@ -18,18 +20,27 @@ export function FlagBridgePage() {
   const [bridge, setBridge] = useState("All");
   const [value, setValue] = useState("All");
 
-  const phases = useMemo(
-    () =>
-      ["All", ...Array.from(new Set(rows.map((row) => row.unit?.phase_code ?? row.unit?.phase_name ?? "").filter(Boolean))).sort()],
-    [rows],
-  );
+  useEffect(() => {
+    if (filteredPhases == null) {
+      return;
+    }
+    if (phase === "All") {
+      return;
+    }
+    if (filteredPhases.length === 0) {
+      setPhase("All");
+      return;
+    }
+    if (!filteredPhases.some((p) => p.phase_code === phase)) {
+      setPhase("All");
+    }
+  }, [filteredPhases, phase]);
 
   const filtered = useMemo(() => {
     return rows.filter((row) => {
       const agreements = row.agreements ?? {};
-      const phaseCode = row.unit?.phase_code ?? row.unit?.phase_name ?? "";
       const hasBreach = Object.values(agreements).includes("RED");
-      if (phase !== "All" && phaseCode !== phase) {
+      if (phase !== "All" && (row.unit?.phase_code ?? "") !== phase) {
         return false;
       }
       if (bridge !== "All") {
@@ -65,12 +76,25 @@ export function FlagBridgePage() {
         <div className="grid gap-4 md:grid-cols-3">
           <label className="block">
             <span className="label">Phase</span>
-            <select value={phase} onChange={(event) => setPhase(event.target.value)} className="input">
-              {phases.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
+            <select
+              value={phase}
+              onChange={(event) => setPhase(event.target.value)}
+              className="input"
+              disabled={phasesScopePending || (filteredPhases != null && filteredPhases.length === 0)}
+            >
+              <option value="All">All</option>
+              {phasesScopePending && phase !== "All" ? (
+                <option value={phase}>{phase}</option>
+              ) : null}
+              {!phasesScopePending && filteredPhases
+                ? [...filteredPhases]
+                    .sort((a, b) => a.phase_code.localeCompare(b.phase_code))
+                    .map((p) => (
+                      <option key={p.phase_id} value={p.phase_code}>
+                        {p.name && p.name.trim() ? p.name.trim() : p.phase_code}
+                      </option>
+                    ))
+                : null}
             </select>
           </label>
           <label className="block">

@@ -5,9 +5,19 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse, Response
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from config.settings import SECRET_KEY
+from api.session_cookie import AUTH_COOKIE_NAME
 from services import auth_service
 
-AUTH_COOKIE_NAME = "session"
+_API_PUBLIC_PREFIXES = (
+    "/api/login",
+    "/api/logout",
+    "/api/auth/bootstrap-status",
+    "/api/auth/bootstrap",
+)
+
+
+def _is_public_api_path(path: str) -> bool:
+    return any(path == p or path.startswith(p + "/") for p in _API_PUBLIC_PREFIXES)
 
 _PUBLIC_PATHS = frozenset({
     "/",
@@ -40,6 +50,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
             or path.startswith("/assets/")
             or not path.startswith("/api/")
         ):
+            return await call_next(request)
+
+        if path.startswith("/api/") and _is_public_api_path(path):
             return await call_next(request)
 
         if auth_service.should_auto_auth():

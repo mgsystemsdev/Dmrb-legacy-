@@ -3,14 +3,8 @@ from __future__ import annotations
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 
-from config.settings import (
-    APP_PASSWORD,
-    APP_USERNAME,
-    AUTH_DISABLED,
-    LEGACY_AUTH_SOURCE,
-    VALIDATOR_PASSWORD,
-    VALIDATOR_USERNAME,
-)
+from config.settings import AUTH_DISABLED, IS_PRODUCTION, is_truthy_setting
+from db.connection import transaction
 from db.repository import user_repository
 
 _hasher = PasswordHasher()
@@ -28,12 +22,6 @@ def verify_password(password_hash: str, plain: str) -> bool:
         return False
 
 
-def login_credentials_configured() -> bool:
-    full = bool(APP_USERNAME and APP_PASSWORD)
-    validator = bool(VALIDATOR_USERNAME and VALIDATOR_PASSWORD)
-    return full or validator
-
-
 def build_bypass_user() -> dict:
     return {
         "user_id": 0,
@@ -44,40 +32,41 @@ def build_bypass_user() -> dict:
 
 
 def should_auto_auth() -> bool:
+    """Only AUTH_DISABLED enables unauthenticated API access."""
+    return bool(AUTH_DISABLED)
+
+
+def needs_bootstrap() -> bool:
+    """True when there are no app_user rows and first-run admin setup is allowed in this environment."""
     if AUTH_DISABLED:
-        return True
-    if LEGACY_AUTH_SOURCE == "env" and not login_credentials_configured():
-        return True
-    return False
+        return False
+    if user_repository.count_all() > 0:
+        return False
+    if IS_PRODUCTION and not is_truthy_setting("ALLOW_API_BOOTSTRAP"):
+        return False
+    return True
 
 
-def _authenticate_env(username: str, password: str) -> dict | None:
-    if (
-        VALIDATOR_USERNAME
-        and VALIDATOR_PASSWORD
-        and username == VALIDATOR_USERNAME
-        and password == VALIDATOR_PASSWORD
-    ):
-        return {
-            "user_id": 0,
-            "username": VALIDATOR_USERNAME,
-            "role": "validator",
-            "access_mode": "validator_only",
-        }
-
-    if APP_USERNAME and APP_PASSWORD and username == APP_USERNAME and password == APP_PASSWORD:
-        return {
-            "user_id": 0,
-            "username": APP_USERNAME,
-            "role": "admin",
-            "access_mode": "full",
-        }
-
-    return None
+def bootstrap_create_first_admin(username: str, password: str) -> dict:
+    """Create the first admin in ``app_user``. Transaction-safe; raises ValueError if not allowed."""
+    u = (username or "").strip()
+    if not u:
+        raise ValueError("username_required")
+    with transaction():
+        user_repository.acquire_bootstrap_advisory_lock()
+        if user_repository.count_all() > 0:
+            raise ValueError("already_bootstrapped")
+        ph = hash_password(password)
+        row = user_repository.insert(u, ph, "admin")
+    return {
+        "user_id": row["user_id"],
+        "username": row["username"],
+        "role": row["role"],
+        "access_mode": "full",
+    }
 
 
 def _authenticate_db(username: str, password: str) -> dict | None:
-    """Return session fields on success, or None if login fails."""
     row = user_repository.get_active_by_username(username)
     if row is None:
         return None
@@ -94,13 +83,7 @@ def _authenticate_db(username: str, password: str) -> dict | None:
 
 
 def authenticate(username: str, password: str) -> dict | None:
-    """Return session fields on success, or None if login fails."""
+    """DB-only: authenticate against ``app_user`` (Argon2)."""
     if AUTH_DISABLED:
         return build_bypass_user()
-
-    if LEGACY_AUTH_SOURCE == "env":
-        if not login_credentials_configured():
-            return build_bypass_user()
-        return _authenticate_env(username, password)
-
     return _authenticate_db(username, password)

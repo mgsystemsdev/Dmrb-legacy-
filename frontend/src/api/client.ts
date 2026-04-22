@@ -22,7 +22,17 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       useAuthStore.getState().clearSession();
 
-      if (window.location.pathname !== "/login") {
+      const path = window.location.pathname;
+      const reqUrl = String(error.config?.url ?? "");
+
+      if (path === "/login" || path === "/setup") {
+        return Promise.reject(error);
+      }
+      if (reqUrl === "/auth/me" || reqUrl === "/auth/bootstrap-status") {
+        return Promise.reject(error);
+      }
+
+      if (path !== "/login" && path !== "/setup") {
         const next = encodeURIComponent(window.location.pathname + window.location.search);
         window.location.assign(`/login?next=${next}`);
       }

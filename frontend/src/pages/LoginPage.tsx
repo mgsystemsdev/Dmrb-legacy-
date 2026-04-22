@@ -1,8 +1,8 @@
 import { FormEvent, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useLocation, useNavigate, Navigate } from "react-router-dom";
 import { toast } from "sonner";
-import { login } from "../api/auth";
+import { AUTH_BOOTSTRAP_QUERY_KEY, getBootstrapStatus, login } from "../api/auth";
 import { useAuthStore } from "../stores/useAuth";
 
 export function LoginPage() {
@@ -11,6 +11,12 @@ export function LoginPage() {
   const setSession = useAuthStore((state) => state.setSession);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+
+  const bootstrapQuery = useQuery({
+    queryKey: AUTH_BOOTSTRAP_QUERY_KEY,
+    queryFn: getBootstrapStatus,
+    staleTime: 30_000,
+  });
 
   const search = new URLSearchParams(location.search);
   const next = search.get("next") ?? "/board";
@@ -31,6 +37,10 @@ export function LoginPage() {
     event.preventDefault();
     mutation.mutate({ username, password });
   };
+
+  if (bootstrapQuery.data?.needs_bootstrap) {
+    return <Navigate to="/setup" replace />;
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-canvas px-4 py-10">

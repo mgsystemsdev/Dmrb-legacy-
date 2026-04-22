@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
   CellValueChangedEvent,
@@ -9,6 +9,7 @@ import { AgGridReact } from "ag-grid-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { api } from "../api/client";
+import { useScopedPropertyPhases } from "../api/usePhaseScope";
 import { useBoard, type BoardRow } from "../api/useBoard";
 import { PageShell } from "../components/PageShell";
 import { PropertySelector } from "../components/PropertySelector";
@@ -89,6 +90,7 @@ export function BoardPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const propertyId = usePropertyStore((state) => state.propertyId);
+  const { filteredPhases, isPending: phasesScopePending } = useScopedPropertyPhases(propertyId);
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabKey>("info");
 
@@ -103,6 +105,39 @@ export function BoardPage() {
     }),
     [searchParams],
   );
+
+  // Keep `phase` query param aligned with scope: must be a phase_code, or removed (= All).
+  useEffect(() => {
+    if (propertyId == null || propertyId < 1) {
+      return;
+    }
+    if (filteredPhases == null) {
+      return;
+    }
+    const param = searchParams.get("phase");
+    if (!param) {
+      return;
+    }
+    if (filteredPhases.length === 0) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("phase");
+      setSearchParams(next, { replace: true });
+      return;
+    }
+    if (filteredPhases.some((p) => p.phase_code === param)) {
+      return;
+    }
+    const byName = filteredPhases.find((p) => (p.name?.trim() ? p.name.trim() : "") === param);
+    if (byName) {
+      const next = new URLSearchParams(searchParams);
+      next.set("phase", byName.phase_code);
+      setSearchParams(next, { replace: true });
+      return;
+    }
+    const next = new URLSearchParams(searchParams);
+    next.delete("phase");
+    setSearchParams(next, { replace: true });
+  }, [propertyId, filteredPhases, searchParams, setSearchParams]);
 
   const { data, isLoading } = useBoard(propertyId, filters);
 
@@ -405,10 +440,20 @@ export function BoardPage() {
     navigate(`/unit/${turnoverId}`);
   };
 
-  const phaseOptions = useMemo(() => {
-    const phaseSet = new Set((data?.rows ?? []).map((row) => row.phase).filter(Boolean));
-    return ["All", ...Array.from(phaseSet).sort()];
-  }, [data]);
+  const phaseOptions = useMemo((): { value: string; label: string }[] => {
+    if (filteredPhases == null) {
+      return [];
+    }
+    if (filteredPhases.length === 0) {
+      return [];
+    }
+    return [...filteredPhases]
+      .map((p) => ({
+        value: p.phase_code,
+        label: p.name && p.name.trim() ? p.name.trim() : p.phase_code,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [filteredPhases]);
 
   return (
     <PageShell
@@ -433,12 +478,19 @@ export function BoardPage() {
               value={filters.phase ?? "All"}
               onChange={(event) => updateFilter("phase", event.target.value)}
               className="input"
+              disabled={phasesScopePending || (filteredPhases != null && filteredPhases.length === 0)}
             >
-              {phaseOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
+              <option value="All">All</option>
+              {phasesScopePending && filters.phase ? (
+                <option value={filters.phase}>{filters.phase}</option>
+              ) : null}
+              {!phasesScopePending
+                ? phaseOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))
+                : null}
             </select>
           </label>
           <label className="block">

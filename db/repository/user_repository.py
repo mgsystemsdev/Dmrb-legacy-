@@ -15,6 +15,16 @@ def count_all() -> int:
         return int(cur.fetchone()[0])
 
 
+# Distinct key for first-admin bootstrap (serialized with pg_advisory_xact_lock).
+_BOOTSTRAP_ADVISORY_KEY = 584_291_738
+
+
+def acquire_bootstrap_advisory_lock() -> None:
+    """Hold for the rest of the current transaction; serializes bootstrap vs other writers."""
+    with get_connection() as conn, conn.cursor() as cur:
+        cur.execute("SELECT pg_advisory_xact_lock(%s)", (_BOOTSTRAP_ADVISORY_KEY,))
+
+
 def get_active_by_username(username: str) -> dict | None:
     key = normalize_username(username)
     with get_connection() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:

@@ -7,7 +7,7 @@ import {
   useAdminUsers,
   usePropertyStructure,
 } from "../api/useOperations";
-import { usePhaseScopeForProperty, usePropertyPhases, useUpdatePhaseScope } from "../api/usePhaseScope";
+import { usePhaseScopeForProperty, usePropertyPhases, useScopedPropertyPhases, useUpdatePhaseScope } from "../api/usePhaseScope";
 import { PageShell } from "../components/PageShell";
 import { PropertySelector } from "../components/PropertySelector";
 import { SectionCard } from "../components/SectionCard";
@@ -30,6 +30,12 @@ export function AdminPage() {
   const [buildingId, setBuildingId] = useState<number | null>(null);
   const [unitId, setUnitId] = useState<number | null>(null);
   const [newUser, setNewUser] = useState({ username: "", password: "", role: "validator" });
+
+  useEffect(() => {
+    setPhaseId(null);
+    setBuildingId(null);
+    setUnitId(null);
+  }, [propertyId]);
 
   useEffect(() => {
     if (typeof settingsQuery.data?.enable_db_write === "boolean") {
@@ -389,22 +395,25 @@ function AddTurnoverSection({
   onMoveInDateChange: (value: string) => void;
   onSubmit: () => void;
 }) {
-  const [phases, setPhases] = useState<Array<{ phase_id: number; phase_code: string; name?: string }>>([]);
+  const { filteredPhases, isPending: phasesScopePending } = useScopedPropertyPhases(propertyId);
   const [buildings, setBuildings] = useState<Array<{ building_id: number; building_code: string; name?: string }>>([]);
   const [units, setUnits] = useState<Array<{ unit_id: number; unit_code_norm: string }>>([]);
 
   useEffect(() => {
     if (!propertyId) {
-      setPhases([]);
       return;
     }
-    api.get<Array<{ phase_id: number; phase_code: string; name?: string }>>(`/properties/${propertyId}/phases`).then((response) => {
-      setPhases(response.data);
-      if (!phaseId && response.data.length) {
-        onPhaseIdChange(response.data[0].phase_id);
-      }
-    });
-  }, [onPhaseIdChange, phaseId, propertyId]);
+    if (filteredPhases == null) {
+      return;
+    }
+    if (filteredPhases.length === 0) {
+      onPhaseIdChange(null);
+      return;
+    }
+    if (phaseId == null || !filteredPhases.some((p) => p.phase_id === phaseId)) {
+      onPhaseIdChange(filteredPhases[0].phase_id);
+    }
+  }, [propertyId, filteredPhases, phaseId, onPhaseIdChange]);
 
   useEffect(() => {
     if (!phaseId) {
@@ -434,24 +443,52 @@ function AddTurnoverSection({
     });
   }, [buildingId, onUnitIdChange, propertyId]);
 
+  const addTurnoverPhaseListBlocked =
+    !propertyId || phasesScopePending || filteredPhases == null || filteredPhases.length === 0;
+
   return (
     <SectionCard title="Add Turnover" description="Select a phase, building, and unit.">
       <div className="grid gap-4 md:grid-cols-3">
-        <select value={phaseId ?? ""} onChange={(event) => onPhaseIdChange(Number(event.target.value))} className="input">
-          {phases.map((phase) => (
-            <option key={phase.phase_id} value={phase.phase_id}>
-              {phase.name ?? phase.phase_code}
+        <select
+          value={phaseId ?? ""}
+          onChange={(event) => onPhaseIdChange(Number(event.target.value))}
+          className="input"
+          disabled={addTurnoverPhaseListBlocked}
+        >
+          {addTurnoverPhaseListBlocked && phaseId == null ? <option value="">—</option> : null}
+          {phasesScopePending && phaseId != null ? (
+            <option value={phaseId}>
+              {filteredPhases?.find((p) => p.phase_id === phaseId)?.name ??
+                filteredPhases?.find((p) => p.phase_id === phaseId)?.phase_code ??
+                "…"}
             </option>
-          ))}
+          ) : null}
+          {!phasesScopePending && filteredPhases
+            ? filteredPhases.map((p) => (
+                <option key={p.phase_id} value={p.phase_id}>
+                  {p.name ?? p.phase_code}
+                </option>
+              ))
+            : null}
         </select>
-        <select value={buildingId ?? ""} onChange={(event) => onBuildingIdChange(Number(event.target.value))} className="input">
+        <select
+          value={buildingId ?? ""}
+          onChange={(event) => onBuildingIdChange(Number(event.target.value))}
+          className="input"
+          disabled={addTurnoverPhaseListBlocked || !phaseId}
+        >
           {buildings.map((building) => (
             <option key={building.building_id} value={building.building_id}>
               {building.name ?? building.building_code}
             </option>
           ))}
         </select>
-        <select value={unitId ?? ""} onChange={(event) => onUnitIdChange(Number(event.target.value))} className="input">
+        <select
+          value={unitId ?? ""}
+          onChange={(event) => onUnitIdChange(Number(event.target.value))}
+          className="input"
+          disabled={!buildingId}
+        >
           {units.map((unit) => (
             <option key={unit.unit_id} value={unit.unit_id}>
               {unit.unit_code_norm}

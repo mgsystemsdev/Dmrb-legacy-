@@ -4,6 +4,7 @@ import { AgGridReact } from "ag-grid-react";
 import axios from "axios";
 import { toast } from "sonner";
 import { api } from "../api/client";
+import { useScopedPropertyPhases } from "../api/usePhaseScope";
 import {
   useCreateUnit,
   useImportUnits,
@@ -262,21 +263,28 @@ function ManualCreateUnitSection({
   const [grossSqFt, setGrossSqFt] = useState("");
   const [hasCarpet, setHasCarpet] = useState(false);
   const [hasWdExpected, setHasWdExpected] = useState(false);
-  const [phases, setPhases] = useState<Array<{ phase_id: number; phase_code: string; name?: string }>>([]);
+  const { filteredPhases, isPending: phasesScopePending } = useScopedPropertyPhases(propertyId);
   const [buildings, setBuildings] = useState<Array<{ building_id: number; building_code: string; name?: string }>>([]);
 
   useEffect(() => {
-    api
-      .get<Array<{ phase_id: number; phase_code: string; name?: string }>>(`/properties/${propertyId}/phases`)
-      .then((response) => {
-        setPhases(response.data);
-        setPhaseId(null);
-        setBuildingId(null);
-      })
-      .catch(() => {
-        setPhases([]);
-      });
+    setPhaseId(null);
+    setBuildingId(null);
   }, [propertyId]);
+
+  useEffect(() => {
+    if (filteredPhases == null) {
+      return;
+    }
+    if (filteredPhases.length === 0) {
+      setPhaseId(null);
+      setBuildingId(null);
+      return;
+    }
+    if (phaseId != null && !filteredPhases.some((p) => p.phase_id === phaseId)) {
+      setPhaseId(null);
+      setBuildingId(null);
+    }
+  }, [propertyId, filteredPhases, phaseId]);
 
   useEffect(() => {
     if (!phaseId) {
@@ -366,14 +374,23 @@ function ManualCreateUnitSection({
               const v = event.target.value;
               setPhaseId(v === "" ? null : Number(v));
             }}
-            disabled={disabled || createUnit.isPending}
+            disabled={disabled || createUnit.isPending || phasesScopePending}
           >
             <option value="">— None —</option>
-            {phases.map((phase) => (
-              <option key={phase.phase_id} value={phase.phase_id}>
-                {phase.name ?? phase.phase_code}
+            {phasesScopePending && phaseId != null ? (
+              <option value={phaseId}>
+                {filteredPhases?.find((p) => p.phase_id === phaseId)?.name ??
+                  filteredPhases?.find((p) => p.phase_id === phaseId)?.phase_code ??
+                  "…"}
               </option>
-            ))}
+            ) : null}
+            {!phasesScopePending && filteredPhases
+              ? filteredPhases.map((p) => (
+                  <option key={p.phase_id} value={p.phase_id}>
+                    {p.name ?? p.phase_code}
+                  </option>
+                ))
+              : null}
           </select>
         </label>
         <label className="flex flex-col gap-2 text-sm font-medium text-text">

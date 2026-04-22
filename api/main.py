@@ -1,10 +1,9 @@
 from __future__ import annotations
 import logging
 from pathlib import Path
-import time
 from fastapi import FastAPI, Response, HTTPException
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from itsdangerous import URLSafeTimedSerializer
 from api.middleware.request_id import RequestIDMiddleware
 from api.middleware.auth import AuthMiddleware
 from api.routers import (
@@ -22,8 +21,8 @@ from api.routers import (
     units,
 )
 from api.schemas.auth import LoginRequest
+from api.session_cookie import clear_session_cookie, set_session_cookie
 from services import auth_service
-from config.settings import SECRET_KEY, SESSION_COOKIE_SECURE
 
 logger = logging.getLogger(__name__)
 
@@ -80,10 +79,34 @@ frontend_dist = Path("frontend/dist")
 if not frontend_dist.exists():
     raise RuntimeError("Missing React build at frontend/dist. Run the frontend build before starting FastAPI.")
 
-app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="spa")
+FRONTEND_INDEX = frontend_dist / "index.html"
+ASSETS_DIR = frontend_dist / "assets"
+if ASSETS_DIR.is_dir():
+    app.mount("/assets", StaticFiles(directory=ASSETS_DIR), name="static-assets")
 
-serializer = URLSafeTimedSerializer(SECRET_KEY)
-AUTH_COOKIE_NAME = "session"
+
+def _is_safe_file_under_dist(candidate: Path) -> bool:
+    dist = frontend_dist.resolve()
+    try:
+        candidate.resolve().relative_to(dist)
+    except ValueError:
+        return False
+    return candidate.is_file()
+
+
+@app.get("/")
+def serve_spa_index() -> FileResponse:
+    return FileResponse(FRONTEND_INDEX, media_type="text/html")
+
+
+@app.get("/{full_path:path}")
+def serve_spa_routes(full_path: str) -> FileResponse:
+    if full_path == "api" or full_path.startswith("api/"):
+        raise HTTPException(status_code=404, detail="Not found")
+    candidate = frontend_dist / full_path
+    if _is_safe_file_under_dist(candidate):
+        return FileResponse(candidate)
+    return FileResponse(FRONTEND_INDEX, media_type="text/html")
 
 
 @app.post("/api/login", tags=["auth"])
@@ -92,29 +115,14 @@ async def api_login(request: LoginRequest, response: Response):
     result = auth_service.authenticate(request.username, request.password)
     if not result:
         raise HTTPException(status_code=401, detail="Invalid username or password")
-
-    session_data = {
-        "user_id": result["user_id"],
-        "username": result["username"],
-        "role": result["role"],
-        "exp": int(time.time()) + 3600 * 24,
-    }
-    token = serializer.dumps(session_data, salt="auth-session")
-    response.set_cookie(
-        key=AUTH_COOKIE_NAME,
-        value=token,
-        httponly=True,
-        samesite="lax",
-        secure=SESSION_COOKIE_SECURE,
-        max_age=3600 * 24,
-    )
+    set_session_cookie(response, result)
     return {"status": "ok"}
 
 
 @app.post("/api/logout", tags=["auth"])
 async def api_logout(response: Response):
     """JSON logout endpoint for API clients."""
-    response.delete_cookie(AUTH_COOKIE_NAME)
+    clear_session_cookie(response)
     return {"status": "ok"}
 
 

@@ -13,7 +13,10 @@ from services.write_guard import WritesDisabledError, check_writes_enabled
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/phase-scope", tags=["phase-scope"])
+# Paths include `/phase-scope` in the decorator so the URL is `/api/phase-scope`
+# (no trailing slash). A router prefix `/phase-scope` + `@get("/")` would only match
+# `/api/phase-scope/`, and clients calling `/api/phase-scope` would 404.
+router = APIRouter(tags=["phase-scope"])
 
 
 class PhaseScopeResponse(BaseModel):
@@ -44,7 +47,7 @@ def _validate_property_id(property_id: int) -> JSONResponse | None:
     return None
 
 
-@router.get("/")
+@router.get("/phase-scope")
 def get_phase_scope(
     property_id: int = Query(..., ge=1),
     user: dict = Depends(get_current_user),
@@ -63,7 +66,7 @@ def get_phase_scope(
     return _ok(data={"property_id": property_id, "phase_ids": phase_ids})
 
 
-@router.put("/")
+@router.put("/phase-scope")
 def put_phase_scope(
     body: PutPhaseScopeBody,
     user: dict = Depends(get_current_user),

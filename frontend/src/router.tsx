@@ -6,6 +6,7 @@ import { AiAgentPage } from "./pages/AiAgentPage";
 import { BoardPage } from "./pages/BoardPage";
 import { FlagBridgePage } from "./pages/FlagBridgePage";
 import { LoginPage } from "./pages/LoginPage";
+import { SetupPage } from "./pages/SetupPage";
 import { MorningWorkflowPage } from "./pages/MorningWorkflowPage";
 import { OperationsSchedulePage } from "./pages/OperationsSchedulePage";
 import { ReportOperationsPage } from "./pages/ReportOperationsPage";
@@ -28,6 +29,10 @@ export const router = createBrowserRouter([
   {
     path: "/login",
     element: <LoginPage />,
+  },
+  {
+    path: "/setup",
+    element: <SetupPage />,
   },
   {
     element: (
