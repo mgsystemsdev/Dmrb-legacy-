@@ -50,7 +50,18 @@ IS_PRODUCTION = bool(
     or os.getenv("RAILWAY_ENVIRONMENT")
     or is_truthy_setting("PRODUCTION")
 )
+# Normalized app environment label; defaults to `development` when unset.
+APP_ENV = (os.getenv("ENV") or "development").strip().lower()
 SESSION_COOKIE_SECURE = IS_PRODUCTION or is_truthy_setting("SESSION_COOKIE_SECURE")
+
+
+def allow_dev_reset_admin_endpoint() -> bool:
+    """Allow POST /api/dev/reset-admin only in a non-production development process."""
+    if IS_PRODUCTION:
+        return False
+    if APP_ENV in ("production", "prod", "staging", "stg"):
+        return False
+    return APP_ENV in ("development", "dev", "local")
 
 if IS_PRODUCTION and SECRET_KEY == _DEFAULT_SECRET_KEY:
     raise RuntimeError(

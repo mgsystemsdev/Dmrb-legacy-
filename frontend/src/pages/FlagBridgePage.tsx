@@ -66,6 +66,17 @@ export function FlagBridgePage() {
     });
   }, [bridge, phase, rows, value]);
 
+  const filteredMetrics = useMemo(() => {
+    let violations = 0;
+    let units_with_breach = 0;
+    for (const row of filtered) {
+      const reds = Object.values(row.agreements ?? {}).filter((v) => v === "RED").length;
+      violations += reds;
+      if (reds > 0) units_with_breach++;
+    }
+    return { violations, units_with_breach };
+  }, [filtered]);
+
   return (
     <PageShell
       title="Flag Bridge"
@@ -123,8 +134,8 @@ export function FlagBridgePage() {
       <MetricGrid
         metrics={[
           { label: "Total Units", value: filtered.length || metrics?.total || 0 },
-          { label: "Violations", value: metrics?.violations ?? 0, tone: "danger" },
-          { label: "Units w/ Breach", value: metrics?.units_with_breach ?? 0, tone: "warning" },
+          { label: "Violations", value: filteredMetrics.violations, tone: "danger" },
+          { label: "Units w/ Breach", value: filteredMetrics.units_with_breach, tone: "warning" },
         ]}
       />
 

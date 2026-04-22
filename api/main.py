@@ -9,6 +9,7 @@ from api.middleware.auth import AuthMiddleware
 from api.routers import (
     auth,
     board,
+    dev,
     health,
     imports,
     notes,
@@ -63,6 +64,7 @@ app.add_middleware(AuthMiddleware)
 
 # JSON API routes
 app.include_router(auth.router, prefix="/api", tags=["auth"])
+app.include_router(dev.router, prefix="/api")
 app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(board.router, prefix="/api", tags=["board"])
 app.include_router(imports.router, prefix="/api", tags=["imports"])

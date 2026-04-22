@@ -11,6 +11,11 @@ type LoginPayload = {
 
 export type BootstrapStatus = {
   needs_bootstrap: boolean;
+  user_count: number;
+  auth_disabled: boolean;
+  is_production: boolean;
+  allow_api_bootstrap: boolean;
+  reason: string | null;
 };
 
 export async function getBootstrapStatus(): Promise<BootstrapStatus> {

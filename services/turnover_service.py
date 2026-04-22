@@ -15,8 +15,6 @@ from db.connection import transaction
 from db.repository import (
     audit_repository,
     import_repository,
-    property_repository,
-    task_repository,
     turnover_repository,
     unit_repository,
 )
@@ -37,6 +35,13 @@ PLACEHOLDER_READY_DATE_OFFSET_DAYS = 10
 
 class TurnoverError(Exception):
     pass
+
+
+def backfill_tasks_for_property(property_id: int, *, phase_ids=None):
+    """
+    Temporary no-op to unblock board reconciliation.
+    """
+    return
 
 
 def create_turnover(

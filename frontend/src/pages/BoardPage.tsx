@@ -455,6 +455,11 @@ export function BoardPage() {
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [filteredPhases]);
 
+  const activePhaseLabel = useMemo(() => {
+    if (!filters.phase) return null;
+    return phaseOptions.find((o) => o.value === filters.phase)?.label ?? filters.phase;
+  }, [filters.phase, phaseOptions]);
+
   return (
     <PageShell
       title="Board"
@@ -557,10 +562,37 @@ export function BoardPage() {
               Unit Tasks
             </button>
           </div>
-          <p className="text-sm text-muted">{data?.total ?? 0} rows</p>
+          <div className="flex items-center gap-3">
+            {activePhaseLabel && (
+              <span className="text-xs text-muted">
+                Showing {activePhaseLabel} —{" "}
+                <button
+                  type="button"
+                  className="underline hover:text-text"
+                  onClick={() => updateFilter("phase", "All")}
+                >
+                  clear
+                </button>
+              </span>
+            )}
+            <p className="text-sm text-muted">{data?.total ?? 0} rows</p>
+          </div>
         </div>
 
-        {activeTab === "info" ? (
+        {!isLoading && (data?.rows ?? []).length === 0 ? (
+          <div className="flex h-[620px] flex-col items-center justify-center gap-2 text-center">
+            <p className="text-sm text-muted">
+              No turnovers{activePhaseLabel ? ` in ${activePhaseLabel}` : ""} match current filters.
+            </p>
+            <button
+              type="button"
+              className="text-xs text-muted underline hover:text-text"
+              onClick={() => setSearchParams(new URLSearchParams(), { replace: true })}
+            >
+              Clear all filters
+            </button>
+          </div>
+        ) : activeTab === "info" ? (
           <div className="ag-theme-quartz-dark h-[620px] w-full">
             <AgGridReact<BoardRow>
               rowData={data?.rows ?? []}

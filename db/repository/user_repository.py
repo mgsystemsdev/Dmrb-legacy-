@@ -15,6 +15,13 @@ def count_all() -> int:
         return int(cur.fetchone()[0])
 
 
+def delete_all() -> int:
+    """Delete every row in ``app_user``. Returns number of rows removed."""
+    with get_connection() as conn, conn.cursor() as cur:
+        cur.execute("DELETE FROM app_user")
+        return int(cur.rowcount)
+
+
 # Distinct key for first-admin bootstrap (serialized with pg_advisory_xact_lock).
 _BOOTSTRAP_ADVISORY_KEY = 584_291_738
 

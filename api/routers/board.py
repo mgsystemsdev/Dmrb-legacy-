@@ -65,7 +65,7 @@ async def get_property_board(
             unit_code=unit.get("unit_code_norm", "?"),
             phase_id=unit.get("phase_id"),
             phase_code=unit.get("phase_code"),
-            phase=unit.get("phase_name", "Unknown"),
+            phase=unit.get("phase_name") or "Unknown",
             status=status_label,
             nvm=nvm_value,
             qc=qc_value,

@@ -12,14 +12,19 @@ def get_by_property(
 ) -> list[dict]:
     """Units for the property. If phase_ids is set, only units in those phases."""
     with get_connection() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-        base = "SELECT * FROM unit WHERE property_id = %s"
+        base = """
+        SELECT u.*, p.phase_code, p.name AS phase_name
+        FROM unit u
+        LEFT JOIN phase p ON p.phase_id = u.phase_id
+        WHERE u.property_id = %s
+        """
         params: list = [property_id]
         if active_only:
-            base += " AND is_active = TRUE"
+            base += " AND u.is_active = TRUE"
         if phase_ids is not None:
-            base += " AND phase_id = ANY(%s)"
+            base += " AND u.phase_id = ANY(%s)"
             params.append(phase_ids)
-        base += " ORDER BY unit_code_norm"
+        base += " ORDER BY u.unit_code_norm"
         cur.execute(base, params)
         return cur.fetchall()
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi.responses import JSONResponse
 from api.deps import get_current_user
 from api.schemas.auth import BootstrapRequest
 from api.session_cookie import set_session_cookie
@@ -10,7 +11,11 @@ router = APIRouter()
 
 @router.get("/auth/bootstrap-status")
 async def bootstrap_status():
-    return {"needs_bootstrap": auth_service.needs_bootstrap()}
+    data = auth_service.get_bootstrap_status_payload()
+    return JSONResponse(
+        content=data,
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 @router.post("/auth/bootstrap")

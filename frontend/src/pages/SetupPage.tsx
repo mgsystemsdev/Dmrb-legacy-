@@ -73,9 +73,27 @@ export function SetupPage() {
   }
 
   if (!statusQuery.data?.needs_bootstrap) {
+    const d = statusQuery.data;
+    let hint = "Setup is not available. Use sign in, or check server config.";
+    if (d?.reason === "auth_disabled") {
+      hint =
+        "API auth is disabled (AUTH_DISABLED). First-run setup is not offered; the API runs without normal login.";
+    } else if (d?.reason === "users_exist") {
+      hint = `An account already exists in the database (user count: ${d.user_count}).`;
+    } else if (d?.reason === "production_requires_ALLOW_API_BOOTSTRAP") {
+      hint =
+        "Production mode blocks bootstrap unless ALLOW_API_BOOTSTRAP is set, or set IS_PRODUCTION false for local.";
+    } else if (d?.reason === "user_count_error") {
+      hint = "Could not read the app_user table; check the database connection.";
+    }
     return (
       <div className="mx-auto max-w-md px-4 py-10 text-center">
-        <p className="text-sm text-muted">Setup is already complete. Use sign in.</p>
+        <p className="text-sm text-muted">{hint}</p>
+        <p className="mt-2 text-left text-xs text-muted/80 font-mono">
+          needs_bootstrap=false · count={d?.user_count ?? "?"}
+          {d?.is_production ? " · production" : ""}
+          {d?.allow_api_bootstrap ? " · allow_bootstrap" : ""}
+        </p>
         <button type="button" className="btn-primary mt-4" onClick={() => navigate("/login", { replace: true })}>
           Go to sign in
         </button>

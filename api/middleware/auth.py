@@ -13,6 +13,7 @@ _API_PUBLIC_PREFIXES = (
     "/api/logout",
     "/api/auth/bootstrap-status",
     "/api/auth/bootstrap",
+    "/api/dev/reset-admin",
 )
 
 

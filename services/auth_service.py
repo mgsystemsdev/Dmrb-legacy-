@@ -36,15 +36,59 @@ def should_auto_auth() -> bool:
     return bool(AUTH_DISABLED)
 
 
-def needs_bootstrap() -> bool:
-    """True when there are no app_user rows and first-run admin setup is allowed in this environment."""
+def get_bootstrap_status_payload() -> dict:
+    """Single source of truth for GET /api/auth/bootstrap-status (and needs_bootstrap())."""
+    allow = is_truthy_setting("ALLOW_API_BOOTSTRAP")
+    try:
+        user_count = user_repository.count_all()
+    except Exception:
+        return {
+            "needs_bootstrap": False,
+            "user_count": -1,
+            "auth_disabled": bool(AUTH_DISABLED),
+            "is_production": bool(IS_PRODUCTION),
+            "allow_api_bootstrap": allow,
+            "reason": "user_count_error",
+        }
     if AUTH_DISABLED:
-        return False
-    if user_repository.count_all() > 0:
-        return False
-    if IS_PRODUCTION and not is_truthy_setting("ALLOW_API_BOOTSTRAP"):
-        return False
-    return True
+        return {
+            "needs_bootstrap": False,
+            "user_count": user_count,
+            "auth_disabled": True,
+            "is_production": bool(IS_PRODUCTION),
+            "allow_api_bootstrap": allow,
+            "reason": "auth_disabled",
+        }
+    if user_count > 0:
+        return {
+            "needs_bootstrap": False,
+            "user_count": user_count,
+            "auth_disabled": False,
+            "is_production": bool(IS_PRODUCTION),
+            "allow_api_bootstrap": allow,
+            "reason": "users_exist",
+        }
+    if IS_PRODUCTION and not allow:
+        return {
+            "needs_bootstrap": False,
+            "user_count": 0,
+            "auth_disabled": False,
+            "is_production": True,
+            "allow_api_bootstrap": False,
+            "reason": "production_requires_ALLOW_API_BOOTSTRAP",
+        }
+    return {
+        "needs_bootstrap": True,
+        "user_count": 0,
+        "auth_disabled": False,
+        "is_production": bool(IS_PRODUCTION),
+        "allow_api_bootstrap": allow,
+        "reason": None,
+    }
+
+
+def needs_bootstrap() -> bool:
+    return bool(get_bootstrap_status_payload()["needs_bootstrap"])
 
 
 def bootstrap_create_first_admin(username: str, password: str) -> dict:
@@ -87,3 +131,38 @@ def authenticate(username: str, password: str) -> dict | None:
     if AUTH_DISABLED:
         return build_bypass_user()
     return _authenticate_db(username, password)
+
+
+def _delete_all_app_users() -> int:
+    return user_repository.delete_all()
+
+
+def reset_all_users() -> int:
+    """Delete all rows in ``app_user``. Returns the number of rows removed."""
+    with transaction():
+        return _delete_all_app_users()
+
+
+def dev_reset_to_single_admin(username: str, password: str) -> dict:
+    """Remove every ``app_user`` row and create one active admin. Non-production / dev use only.
+
+    Password is hashed with Argon2 before persistence. Atomic single transaction.
+    """
+    u = (username or "").strip()
+    if not u:
+        raise ValueError("username_required")
+    if not (password or "").strip():
+        raise ValueError("password_required")
+    if len(password) < 8:
+        raise ValueError("password_too_short")
+    with transaction():
+        _delete_all_app_users()
+        ph = hash_password(password)
+        row = user_repository.insert(u, ph, "admin")
+    return {
+        "user_id": row["user_id"],
+        "username": row["username"],
+        "role": row["role"],
+        "is_active": row["is_active"],
+        "access_mode": "full",
+    }
