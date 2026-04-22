@@ -23,6 +23,7 @@ from api.routers import (
 )
 from api.schemas.auth import LoginRequest
 from api.session_cookie import clear_session_cookie, set_session_cookie
+from config import settings
 from services import auth_service
 
 logger = logging.getLogger(__name__)
@@ -64,7 +65,10 @@ app.add_middleware(AuthMiddleware)
 
 # JSON API routes
 app.include_router(auth.router, prefix="/api", tags=["auth"])
-app.include_router(dev.router, prefix="/api")
+
+if settings.allow_dev_reset_admin_endpoint():
+    app.include_router(dev.router, prefix="/api")
+
 app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(board.router, prefix="/api", tags=["board"])
 app.include_router(imports.router, prefix="/api", tags=["imports"])
