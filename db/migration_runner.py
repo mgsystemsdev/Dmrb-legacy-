@@ -229,3 +229,17 @@ def ensure_database_ready() -> None:
         if not cursor.fetchone()[0]:
             migration_015 = (_MIGRATIONS_DIR / "015_task_fsm.sql").read_text(encoding="utf-8")
             cursor.execute(migration_015)
+        # Apply migration 016 (phase_scope per user) if the partial unique index is missing
+        cursor.execute(
+            """
+            SELECT EXISTS (
+                SELECT 1
+                FROM pg_indexes
+                WHERE schemaname = 'public'
+                  AND indexname = 'phase_scope_property_global_uq'
+            )
+            """
+        )
+        if not cursor.fetchone()[0]:
+            migration_016 = (_MIGRATIONS_DIR / "016_phase_scope_per_user.sql").read_text(encoding="utf-8")
+            cursor.execute(migration_016)

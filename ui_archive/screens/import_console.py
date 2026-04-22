@@ -27,7 +27,9 @@ def render_import_console() -> None:
         st.info("Create a property in the Admin tab to begin.")
         return
 
-    missing_move_out_service.reconcile_pending_move_ins(property_id)
+    missing_move_out_service.reconcile_pending_move_ins(
+        property_id, user_id=int(st.session_state.get("user_id") or 0)
+    )
 
     with st.container(border=True):
         st.markdown("**IMPORT CONSOLE**")

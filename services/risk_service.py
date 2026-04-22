@@ -100,13 +100,14 @@ def get_risk_dashboard(
     threshold_days: int = sla_domain.DEFAULT_SLA_THRESHOLD_DAYS,
     phase_scope: list[int] | None = None,
     board: list | None = None,
+    user_id: int = 0,
 ) -> list[dict]:
     """Return risk dashboard rows for Risk Radar: each item has risk_level, risk_score,
     risk_reasons, unit_code, phase_code, phase_id, move_in_date. Interpretations
     (SLA, breach, readiness-based score) are computed here, not in UI."""
     today = today or date.today()
     if phase_scope is None:
-        phase_scope = scope_service.get_phase_scope(property_id)
+        phase_scope = scope_service.get_phase_scope(user_id, property_id)
     if board is None:
         board = board_service.get_board(
             property_id, today=today, sla_threshold=threshold_days, phase_scope=phase_scope

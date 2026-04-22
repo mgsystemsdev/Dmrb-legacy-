@@ -6,11 +6,13 @@ import { AiAgentPage } from "./pages/AiAgentPage";
 import { BoardPage } from "./pages/BoardPage";
 import { FlagBridgePage } from "./pages/FlagBridgePage";
 import { LoginPage } from "./pages/LoginPage";
+import { SetupPage } from "./pages/SetupPage";
 import { MorningWorkflowPage } from "./pages/MorningWorkflowPage";
 import { OperationsSchedulePage } from "./pages/OperationsSchedulePage";
 import { ReportOperationsPage } from "./pages/ReportOperationsPage";
 import { RiskRadarPage } from "./pages/RiskRadarPage";
 import { TurnoverDetailPage } from "./pages/TurnoverDetailPage";
+import { UnitMasterPage } from "./pages/UnitMasterPage";
 
 function AppLayout() {
   return (
@@ -27,6 +29,10 @@ export const router = createBrowserRouter([
   {
     path: "/login",
     element: <LoginPage />,
+  },
+  {
+    path: "/setup",
+    element: <SetupPage />,
   },
   {
     element: (
@@ -46,6 +52,7 @@ export const router = createBrowserRouter([
       { path: "/turnovers/:turnoverId", element: <TurnoverDetailPage /> },
       { path: "/ai-agent", element: <AiAgentPage /> },
       { path: "/admin", element: <AdminPage /> },
+      { path: "/admin/unit-master", element: <UnitMasterPage /> },
     ],
   },
   {

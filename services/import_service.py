@@ -183,11 +183,11 @@ def get_missing_move_outs(property_id: int) -> list[dict]:
     ]
 
 
-def get_fas_rows(property_id: int) -> list[dict]:
+def get_fas_rows(property_id: int, user_id: int = 0) -> list[dict]:
     """Return PENDING_FAS import rows for the FAS tracker (units in active phase scope only)."""
     from services import scope_service
 
-    phase_ids = scope_service.get_phase_scope(property_id)
+    phase_ids = scope_service.get_phase_scope(user_id, property_id)
     return import_repository.get_fas_rows(property_id, phase_ids=phase_ids)
 
 

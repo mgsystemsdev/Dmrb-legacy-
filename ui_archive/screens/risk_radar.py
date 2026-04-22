@@ -17,9 +17,11 @@ _RISK_LEVELS = ["HIGH", "MEDIUM", "LOW"]
 
 
 @st.cache_data(ttl=30)
-def _load_risk_dashboard(property_id: int, phase_scope: tuple[int, ...]) -> list[dict]:
+def _load_risk_dashboard(property_id: int, user_id: int, phase_scope: tuple[int, ...]) -> list[dict]:
     return risk_service.get_risk_dashboard(
-        property_id, phase_scope=list(phase_scope) if phase_scope else None
+        property_id,
+        phase_scope=list(phase_scope) if phase_scope else None,
+        user_id=user_id,
     )
 
 
@@ -34,9 +36,10 @@ def render_risk_radar() -> None:
 
     st.caption(f"Active Property: **{_property_name(property_id)}**")
 
-    phase_scope = scope_service.get_phase_scope(property_id)
+    uid = int(st.session_state.get("user_id") or 0)
+    phase_scope = scope_service.get_phase_scope(uid, property_id)
     cache_key_scope = tuple(sorted(phase_scope))
-    rows = _load_risk_dashboard(property_id, cache_key_scope)
+    rows = _load_risk_dashboard(property_id, uid, cache_key_scope)
     phase_scope_ids = set(phase_scope)
     all_phases = property_service.get_phases(property_id)
     scoped_phases = [p for p in all_phases if p["phase_id"] in phase_scope_ids]

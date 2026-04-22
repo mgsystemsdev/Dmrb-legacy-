@@ -50,7 +50,18 @@ IS_PRODUCTION = bool(
     or os.getenv("RAILWAY_ENVIRONMENT")
     or is_truthy_setting("PRODUCTION")
 )
+# Normalized app environment label; defaults to `development` when unset.
+APP_ENV = (os.getenv("ENV") or "development").strip().lower()
 SESSION_COOKIE_SECURE = IS_PRODUCTION or is_truthy_setting("SESSION_COOKIE_SECURE")
+
+
+def allow_dev_reset_admin_endpoint() -> bool:
+    """Allow POST /api/dev/reset-admin only in a non-production development process."""
+    if IS_PRODUCTION:
+        return False
+    if APP_ENV in ("production", "prod", "staging", "stg"):
+        return False
+    return APP_ENV in ("development", "dev", "local")
 
 if IS_PRODUCTION and SECRET_KEY == _DEFAULT_SECRET_KEY:
     raise RuntimeError(
@@ -58,9 +69,9 @@ if IS_PRODUCTION and SECRET_KEY == _DEFAULT_SECRET_KEY:
         "Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(64))\""
     )
 
-# Streamlit login: "env" = APP_* / VALIDATOR_* (default). "db" = public.app_user + Argon2.
-_LEGACY_AUTH_SRC = (get_setting("LEGACY_AUTH_SOURCE", "env") or "env").strip().lower()
-LEGACY_AUTH_SOURCE = _LEGACY_AUTH_SRC if _LEGACY_AUTH_SRC in ("env", "db") else "env"
+# API auth uses public.app_user only. Kept for Streamlit / legacy: "env" = APP_*, "db" = app_user.
+_LEGACY_AUTH_SRC = (get_setting("LEGACY_AUTH_SOURCE", "db") or "db").strip().lower()
+LEGACY_AUTH_SOURCE = _LEGACY_AUTH_SRC if _LEGACY_AUTH_SRC in ("env", "db") else "db"
 AUTH_DISABLED = is_truthy_setting("AUTH_DISABLED")
 
 OPENAI_API_KEY = get_setting("OPENAI_API_KEY", "") or ""

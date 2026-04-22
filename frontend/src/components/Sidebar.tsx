@@ -12,6 +12,7 @@ const navItems = [
   { to: "/report-operations", label: "Report Operations" },
   { to: "/ai-agent", label: "AI Agent" },
   { to: "/admin", label: "Admin" },
+  { to: "/admin/unit-master", label: "Unit Master" },
 ];
 
 function formatRole(role?: string) {
@@ -49,6 +50,7 @@ export function Sidebar() {
           <NavLink
             key={item.to}
             to={item.to}
+            end={item.to === "/admin"}
             className={({ isActive }) =>
               `group relative block rounded-md px-3 py-2 text-sm transition ${
                 isActive

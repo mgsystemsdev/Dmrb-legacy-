@@ -366,11 +366,12 @@ def get_board_view(
     today: date | None = None,
     phase_scope: list[int] | None = None,
     sla_threshold: int = DEFAULT_SLA_THRESHOLD_DAYS,
+    user_id: int = 0,
 ) -> list[dict]:
     """Single entry point for board data. Returns same structure as get_board.
-    When phase_scope is None, resolves via scope_service.get_phase_scope(property_id)."""
+    When phase_scope is None, resolves via scope_service.get_phase_scope(user_id, property_id)."""
     if phase_scope is None:
-        phase_scope = scope_service.get_phase_scope(property_id)
+        phase_scope = scope_service.get_phase_scope(user_id, property_id)
     return get_board(
         property_id, today=today, sla_threshold=sla_threshold, phase_scope=phase_scope
     )
@@ -400,11 +401,12 @@ def get_board_summary(
     today: date | None = None,
     phase_scope: list[int] | None = None,
     board: list | None = None,
+    user_id: int = 0,
 ) -> dict:
     """Return aggregate counts for the property board."""
     if board is None:
         if phase_scope is None:
-            phase_scope = scope_service.get_phase_scope(property_id)
+            phase_scope = scope_service.get_phase_scope(user_id, property_id)
         board = get_board(property_id, today, phase_scope=phase_scope)
 
     by_priority = {}
@@ -437,11 +439,12 @@ def get_board_metrics(
     today: date | None = None,
     phase_scope: list[int] | None = None,
     board: list | None = None,
+    user_id: int = 0,
 ) -> dict:
     """Return the six headline metrics for the board metrics bar."""
     if board is None:
-        if phase_scope is None:
-            phase_scope = scope_service.get_phase_scope(property_id)
+        if phase_scope is None and property_id is not None:
+            phase_scope = scope_service.get_phase_scope(user_id, property_id)
         board = get_board(property_id, today, phase_scope=phase_scope)
     active = len(board)
     violations = 0
@@ -490,11 +493,12 @@ def get_flag_counts(
     today: date | None = None,
     phase_scope: list[int] | None = None,
     board: list | None = None,
+    user_id: int = 0,
 ) -> dict[str, int]:
     """Return counts per breach category for the sidebar Top Flags."""
     if board is None:
         if phase_scope is None:
-            phase_scope = scope_service.get_phase_scope(property_id)
+            phase_scope = scope_service.get_phase_scope(user_id, property_id)
         board = get_board(property_id, today, phase_scope=phase_scope)
     counts: dict[str, int] = {
         "SLA_BREACH": 0,
@@ -534,6 +538,7 @@ def get_flag_units(
     today: date | None = None,
     phase_scope: list[int] | None = None,
     board: list | None = None,
+    user_id: int = 0,
 ) -> dict[str, list[dict]]:
     """Return flagged units per breach category for the sidebar expanders.
 
@@ -541,7 +546,7 @@ def get_flag_units(
     """
     if board is None:
         if phase_scope is None:
-            phase_scope = scope_service.get_phase_scope(property_id)
+            phase_scope = scope_service.get_phase_scope(user_id, property_id)
         board = get_board(property_id, today, phase_scope=phase_scope)
     cats: dict[str, list[dict]] = {
         "SLA_BREACH": [],
@@ -586,11 +591,12 @@ def get_morning_risk_metrics(
     property_id: int,
     today: date | None = None,
     phase_scope: list[int] | None = None,
+    user_id: int = 0,
 ) -> dict:
     """Return the three risk-summary metrics for the Morning Workflow."""
     today = today or date.today()
     if phase_scope is None:
-        phase_scope = scope_service.get_phase_scope(property_id)
+        phase_scope = scope_service.get_phase_scope(user_id, property_id)
     board = get_board(property_id, today, phase_scope=phase_scope)
     vacant_over_7 = 0
     sla_breach = 0
@@ -616,11 +622,12 @@ def get_todays_critical_units(
     property_id: int,
     today: date | None = None,
     phase_scope: list[int] | None = None,
+    user_id: int = 0,
 ) -> list[dict]:
     """Return units with move-out, move-in, or ready dates matching today."""
     today = today or date.today()
     if phase_scope is None:
-        phase_scope = scope_service.get_phase_scope(property_id)
+        phase_scope = scope_service.get_phase_scope(user_id, property_id)
     board = get_board(property_id, today, phase_scope=phase_scope)
     critical: list[dict] = []
     for item in board:

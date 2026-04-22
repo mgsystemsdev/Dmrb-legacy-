@@ -13,7 +13,7 @@ from services import board_service, property_service, risk_service, scope_servic
 _TOP_N = 10
 
 
-def build_context(property_id: int, today: date | None = None) -> str:
+def build_context(property_id: int, today: date | None = None, user_id: int = 0) -> str:
     """Return a compact markdown snapshot of the current board state.
 
     One board load per call; all derived signals share that load.
@@ -22,9 +22,9 @@ def build_context(property_id: int, today: date | None = None) -> str:
     today = today or date.today()
 
     # ── Single board load ─────────────────────────────────────────────────────
-    phase_scope = scope_service.get_phase_scope(property_id)
+    phase_scope = scope_service.get_phase_scope(user_id, property_id)
     board = board_service.get_board_view(
-        property_id, today=today, phase_scope=phase_scope
+        property_id, today=today, phase_scope=phase_scope, user_id=user_id
     )
 
     # ── Property name ─────────────────────────────────────────────────────────
@@ -42,7 +42,7 @@ def build_context(property_id: int, today: date | None = None) -> str:
     stalled = stalled_all[:_TOP_N]
 
     risk_rows_all = risk_service.get_risk_dashboard(
-        property_id, today=today, phase_scope=phase_scope, board=board
+        property_id, today=today, phase_scope=phase_scope, board=board, user_id=user_id
     )
     risk_rows_sorted = sorted(risk_rows_all, key=lambda r: r["risk_score"], reverse=True)
     risk_rows = risk_rows_sorted[:_TOP_N]

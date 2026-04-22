@@ -17,6 +17,7 @@ from services import (
     import_service,
     property_service,
     risk_service,
+    scope_service,
     system_settings_service,
 )
 from services.ai.ai_agent_chat_service import (
@@ -85,15 +86,15 @@ class UpdateUserRequest(BaseModel):
 @router.get("/operations/workflow/{property_id}")
 async def get_workflow_summary(property_id: int, user: dict = Depends(get_current_user)):
     today = date.today()
-    phase_scope = property_service.get_phases(property_id)
-    scope_ids = [phase["phase_id"] for phase in phase_scope]
+    uid = int(user["user_id"])
+    scope_ids = scope_service.get_phase_scope(uid, property_id)
     board = board_service.get_board(property_id, today=today, phase_scope=scope_ids)
     summary = board_service.get_board_summary(property_id, today=today, phase_scope=scope_ids, board=board)
     metrics = board_service.get_board_metrics(property_id=property_id, today=today, phase_scope=scope_ids, board=board)
     risk_metrics = board_service.get_morning_risk_metrics(property_id, today=today, phase_scope=scope_ids)
     critical_units = board_service.get_todays_critical_units(property_id, today=today, phase_scope=scope_ids)
     import_timestamps = import_service.get_latest_import_timestamps(property_id)
-    missing_move_outs = missing_move_out_service.list_missing_move_outs(property_id)
+    missing_move_outs = missing_move_out_service.list_missing_move_outs(property_id, user_id=uid)
     return _serialize(
         {
             "today": today,
@@ -109,21 +110,27 @@ async def get_workflow_summary(property_id: int, user: dict = Depends(get_curren
 
 @router.get("/operations/risk/{property_id}")
 async def get_risk_dashboard(property_id: int, user: dict = Depends(get_current_user)):
-    rows = risk_service.get_risk_dashboard(property_id, today=date.today())
+    rows = risk_service.get_risk_dashboard(
+        property_id, today=date.today(), user_id=int(user["user_id"])
+    )
     rows.sort(key=lambda row: row["risk_score"], reverse=True)
     return _serialize({"rows": rows})
 
 
 @router.get("/operations/flag-bridge/{property_id}")
 async def get_flag_bridge(property_id: int, user: dict = Depends(get_current_user)):
-    board = board_service.get_board_view(property_id, today=date.today())
+    board = board_service.get_board_view(
+        property_id, today=date.today(), user_id=int(user["user_id"])
+    )
     metrics = board_service.get_flag_bridge_metrics(board)
     return _serialize({"rows": board, "metrics": metrics})
 
 
 @router.get("/operations/report-operations/{property_id}/missing-move-outs")
 async def get_missing_move_outs(property_id: int, user: dict = Depends(get_current_user)):
-    return _serialize({"rows": missing_move_out_service.list_missing_move_outs(property_id)})
+    return _serialize(
+        {"rows": missing_move_out_service.list_missing_move_outs(property_id, user_id=int(user["user_id"]))}
+    )
 
 
 @router.post("/operations/report-operations/{property_id}/missing-move-outs/{row_id}/resolve")
@@ -149,7 +156,9 @@ async def resolve_missing_move_out(
 
 @router.get("/operations/report-operations/{property_id}/fas")
 async def get_fas_rows(property_id: int, user: dict = Depends(get_current_user)):
-    return _serialize({"rows": import_service.get_fas_rows(property_id)})
+    return _serialize(
+        {"rows": import_service.get_fas_rows(property_id, user_id=int(user["user_id"]))}
+    )
 
 
 @router.patch("/operations/report-operations/fas/{row_id}")
@@ -295,11 +304,11 @@ async def get_export_manifest(property_id: int, user: dict = Depends(get_current
     }
 
 
-def _build_export_parts(property_id: int) -> tuple[bytes, bytes, bytes, bytes]:
+def _build_export_parts(property_id: int, user_id: int) -> tuple[bytes, bytes, bytes, bytes]:
     today = date.today()
-    rows = export_service.build_export_turnovers(property_id, today=today)
-    metrics = board_service.get_board_metrics(property_id=property_id)
-    summary_bytes = export_service.build_weekly_summary_bytes(property_id, today=today)
+    rows = export_service.build_export_turnovers(property_id, today=today, user_id=user_id)
+    metrics = board_service.get_board_metrics(property_id=property_id, user_id=user_id)
+    summary_bytes = export_service.build_weekly_summary_bytes(property_id, today=today, user_id=user_id)
     chart_bytes = export_chart.build_dashboard_chart(rows, today=today)
     final_bytes = export_excel.build_final_report(rows)
     dmrb_bytes = export_excel.build_dmrb_report(rows, metrics, today)
@@ -308,7 +317,9 @@ def _build_export_parts(property_id: int) -> tuple[bytes, bytes, bytes, bytes]:
 
 @router.get("/operations/exports/{property_id}/download/{asset}")
 async def download_export(asset: str, property_id: int, user: dict = Depends(get_current_user)):
-    final_bytes, dmrb_bytes, chart_bytes, summary_bytes = _build_export_parts(property_id)
+    final_bytes, dmrb_bytes, chart_bytes, summary_bytes = _build_export_parts(
+        property_id, int(user["user_id"])
+    )
     if asset == "weekly-summary":
         return Response(content=summary_bytes, media_type="text/plain", headers={"Content-Disposition": 'attachment; filename="Weekly_Summary.txt"'})
     if asset == "dashboard-chart":
@@ -367,7 +378,7 @@ async def stream_ai_reply(
 
     def event_stream():
         try:
-            context = build_context(property_id)
+            context = build_context(property_id, user_id=int(user["user_id"]))
             reply = complete_chat(messages, app_context=context)
             for chunk in reply.split():
                 yield f"data: {json.dumps({'type': 'chunk', 'content': chunk + ' '})}\n\n"

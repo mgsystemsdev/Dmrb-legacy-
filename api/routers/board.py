@@ -26,8 +26,9 @@ async def get_property_board(
     user: dict = Depends(get_current_user)
 ):
     today = date.today()
+    uid = int(user["user_id"])
     # board_service.get_board_view handles phase_scope reconciliation
-    items = board_service.get_board_view(property_id, today=today)
+    items = board_service.get_board_view(property_id, today=today, user_id=uid)
 
     if board_filter:
         items = board_service.filter_by_flag_category(items, board_filter)
@@ -64,7 +65,7 @@ async def get_property_board(
             unit_code=unit.get("unit_code_norm", "?"),
             phase_id=unit.get("phase_id"),
             phase_code=unit.get("phase_code"),
-            phase=unit.get("phase_name", "Unknown"),
+            phase=unit.get("phase_name") or "Unknown",
             status=status_label,
             nvm=nvm_value,
             qc=qc_value,

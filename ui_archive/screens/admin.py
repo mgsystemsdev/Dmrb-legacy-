@@ -221,6 +221,11 @@ def _run_unit_master_import(property_id: int) -> None:
     strict = st.session_state.get("admin_um_strict", False)
     try:
         result = unit_service.import_unit_master(property_id, df, strict)
+    except UnitMasterImportError as exc:
+        st.error(f"Import rolled back — {len(exc.errors)} issue(s).")
+        for err in exc.errors:
+            st.warning(err)
+        return
     except WritesDisabledError as exc:
         st.warning(str(exc))
         return
@@ -298,7 +303,8 @@ def _render_phase_manager(property_id: int | None) -> None:
 
         phase_codes = [p["phase_code"] for p in phases]
         phase_id_by_code = {p["phase_code"]: p["phase_id"] for p in phases}
-        current_phase_ids = scope_service.get_phase_scope(property_id)
+        uid = int(st.session_state.get("user_id") or 0)
+        current_phase_ids = scope_service.get_phase_scope(uid, property_id)
         default_codes = [
             p["phase_code"] for p in phases
             if p["phase_id"] in current_phase_ids
@@ -316,7 +322,7 @@ def _render_phase_manager(property_id: int | None) -> None:
         if st.button("Apply Phase Scope", key="admin_phase_apply", width="stretch"):
             try:
                 selected_ids = [phase_id_by_code[c] for c in selected_codes if c in phase_id_by_code]
-                scope_service.update_phase_scope(property_id, selected_ids)
+                scope_service.update_phase_scope(uid, property_id, selected_ids)
                 st.cache_data.clear()
                 st.success(
                     f"Scope saved: **{', '.join(selected_codes)}**"
@@ -328,7 +334,7 @@ def _render_phase_manager(property_id: int | None) -> None:
 
     with st.container(border=True):
         st.markdown("**PHASES IN DATABASE**")
-        current_phase_ids_set = set(scope_service.get_phase_scope(property_id))
+        current_phase_ids_set = set(scope_service.get_phase_scope(uid, property_id))
         phase_data = []
         for p in phases:
             unit_count = len(property_service.get_units_by_phase(property_id, p["phase_id"]))

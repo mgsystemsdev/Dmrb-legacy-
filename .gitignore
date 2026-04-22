@@ -1,3 +1,9 @@
 .streamlit/secrets.toml
 .env
 static/tailwind.css
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
