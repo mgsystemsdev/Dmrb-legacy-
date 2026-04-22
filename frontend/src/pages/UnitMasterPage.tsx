@@ -43,6 +43,26 @@ type UnitsGridRow = UnitRow & {
   created_at?: string | null;
 };
 
+/** Last import outcome from a successful /api/unit-master/import (200) or from error body (4xx) for display. */
+type UnitMasterImportResultDisplay = {
+  created: number;
+  skipped: number;
+  errors: string[];
+};
+
+function importErrorsFromAxiosData(
+  data: unknown,
+): string[] {
+  if (!data || typeof data !== "object") {
+    return [];
+  }
+  const errors = (data as { errors?: unknown }).errors;
+  if (!Array.isArray(errors)) {
+    return [];
+  }
+  return errors.filter((e): e is string => typeof e === "string" && e.length > 0);
+}
+
 function formatCellDash(params: ValueFormatterParams): string {
   const v = params.value;
   if (v == null || v === "") {
@@ -69,9 +89,14 @@ export function UnitMasterPage() {
   const [importFile, setImportFile] = useState<File | null>(null);
   const [strictImport, setStrictImport] = useState(false);
   const [quickSearch, setQuickSearch] = useState("");
+  const [importResult, setImportResult] = useState<UnitMasterImportResultDisplay | null>(null);
 
   const unitsQuery = useUnits(propertyId, { activeOnly });
   const importMutation = useImportUnits();
+
+  useEffect(() => {
+    setImportResult(null);
+  }, [propertyId]);
 
   const colDefs = useMemo<ColDef<UnitsGridRow>[]>(
     () => [
@@ -178,6 +203,7 @@ export function UnitMasterPage() {
                   if (!propertyId || !importFile) {
                     return;
                   }
+                  setImportResult(null);
                   importMutation.mutate(
                     { propertyId, file: importFile, strict: strictImport },
                     {
@@ -186,12 +212,37 @@ export function UnitMasterPage() {
                           toast.error(data.errors?.join("; ") || "Import failed");
                           return;
                         }
-                        const created = data.data?.created ?? 0;
-                        toast.success(`Import complete — ${created} unit(s) created`);
+                        const d = data.data;
+                        if (!d) {
+                          toast.error("Import returned no data");
+                          return;
+                        }
+                        const rowErrors = Array.isArray(d.errors) ? d.errors : [];
+                        setImportResult({
+                          created: d.created,
+                          skipped: d.skipped,
+                          errors: rowErrors,
+                        });
+                        if (rowErrors.length > 0) {
+                          toast("Import finished — see row details below", {
+                            description: `${d.created} created, ${d.skipped} skipped, ${rowErrors.length} message(s)`,
+                          });
+                        } else {
+                          toast.success(
+                            `Import complete — ${d.created} created, ${d.skipped} skipped`,
+                          );
+                        }
                         setImportFile(null);
                       },
                       onError: (error) => {
-                        toast.error(formatAxiosMessage(error));
+                        const msg = formatAxiosMessage(error);
+                        toast.error(msg);
+                        if (axios.isAxiosError(error) && error.response?.data) {
+                          const rowErrors = importErrorsFromAxiosData(error.response.data);
+                          if (rowErrors.length) {
+                            setImportResult({ created: 0, skipped: 0, errors: rowErrors });
+                          }
+                        }
                       },
                     },
                   );
@@ -200,6 +251,47 @@ export function UnitMasterPage() {
                 {importMutation.isPending ? "Importing…" : "Run import"}
               </button>
             </div>
+
+            {importResult ? (
+              <div
+                className="mt-4 rounded-md border border-border bg-surface-2/40 p-4"
+                role="status"
+                aria-live="polite"
+              >
+                <p className="text-sm font-medium text-text">Last import</p>
+                <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm text-text">
+                  <div className="flex gap-1.5">
+                    <dt className="text-muted">Created</dt>
+                    <dd className="font-medium tabular-nums">{importResult.created}</dd>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <dt className="text-muted">Skipped</dt>
+                    <dd className="font-medium tabular-nums">{importResult.skipped}</dd>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <dt className="text-muted">Errors</dt>
+                    <dd className="font-medium tabular-nums">{importResult.errors.length}</dd>
+                  </div>
+                </dl>
+                {importResult.errors.length > 0 ? (
+                  <div className="mt-3">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted">
+                      Row and validation messages
+                    </p>
+                    <ul
+                      className="mt-2 max-h-48 list-none space-y-1.5 overflow-y-auto overscroll-y-contain rounded border border-border/80 bg-surface-1/40 py-2 pl-2 pr-2 text-sm text-text"
+                      role="list"
+                    >
+                      {importResult.errors.map((err, i) => (
+                        <li key={`${i}-${err.slice(0, 32)}`} className="break-words border-b border-border/30 pb-1.5 last:border-b-0 last:pb-0">
+                          {err}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </SectionCard>
 
           <ManualCreateUnitSection propertyId={propertyId} disabled={importMutation.isPending} />

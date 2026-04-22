@@ -29,7 +29,7 @@ def main() -> int:
     parser.add_argument(
         "--role",
         required=True,
-        choices=("admin", "validator"),
+        choices=("admin", "mga210"),
         help="admin = full app access; validator = W/O Validator only",
     )
     parser.add_argument(

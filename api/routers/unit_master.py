@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from datetime import date, datetime
-from io import BytesIO
+from io import BytesIO, StringIO
 from typing import Any
 
 import pandas as pd
@@ -18,6 +18,93 @@ from services.write_guard import WritesDisabledError, check_writes_enabled
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/unit-master", tags=["unit-master"])
+
+# Per legacy admin / unit master: normalized column name (str.strip + casefold) must match
+# one of these to count as the unit key column. Maps to the ``unit_code`` name expected by
+# ``unit_service.import_unit_master`` (Unit, unit, Unit Number, unit_number, UnitCode, Unit Code, …).
+_UNIT_CODE_ALIAS_KEY_FOLDS: frozenset[str] = frozenset(
+    {
+        "unit",
+        "unit number",
+        "unit_number",
+        "unitcode",
+        "unit code",
+        "unit_code",
+    }
+)
+
+
+def _list_column_names(df: pd.DataFrame) -> list[str]:
+    return [str(c) for c in df.columns]
+
+
+def _df_has_resolvable_unit_column(df: pd.DataFrame) -> bool:
+    """True if some column (trim + caseless) is a known unit_code alias (for read heuristics)."""
+    for c in df.columns:
+        if str(c).strip().casefold() in _UNIT_CODE_ALIAS_KEY_FOLDS:
+            return True
+    return False
+
+
+def _normalize_unit_code_column_name_for_import(df: pd.DataFrame) -> pd.DataFrame:
+    """If ``unit_code`` is not already a column name, rename the first matching alias column."""
+    out = df.copy()
+    if "unit_code" in out.columns:
+        return out
+    for col in out.columns:
+        key = str(col).strip().casefold()
+        if key in _UNIT_CODE_ALIAS_KEY_FOLDS:
+            return out.rename(columns={col: "unit_code"})
+    return out
+
+
+def _read_unit_master_from_first_comma_line(raw: bytes) -> pd.DataFrame:
+    """Re-parse: header row = first line in the file that contains a comma. ``dtype=str``."""
+    for enc in ("utf-8-sig", "utf-8", "cp1252", "latin-1"):
+        try:
+            text = raw.decode(enc)
+            break
+        except UnicodeDecodeError:
+            continue
+    else:
+        text = raw.decode("utf-8", errors="replace")
+    lines = text.splitlines()
+    header_idx = next((i for i, line in enumerate(lines) if "," in line), None)
+    if header_idx is None:
+        raise ValueError("no line containing a comma (cannot locate CSV header row)")
+    remainder = "\n".join(lines[header_idx:])
+    return pd.read_csv(StringIO(remainder), dtype=str)
+
+
+def _read_unit_master_csv(raw: bytes) -> pd.DataFrame:
+    """Parse CSV: try ``read_csv`` on full bytes, then (if needed) first comma line as header. ``dtype=str``."""
+    first_exc: Exception | None = None
+    try:
+        df = pd.read_csv(BytesIO(raw), dtype=str)
+    except Exception as exc:
+        first_exc = exc
+        logger.info(
+            "unit_master: primary read_csv failed (%s), trying header-row scan",
+            exc,
+        )
+        try:
+            return _read_unit_master_from_first_comma_line(raw)
+        except Exception as retry_exc:
+            assert first_exc is not None
+            raise first_exc from retry_exc
+
+    if not _df_has_resolvable_unit_column(df):
+        try:
+            alt = _read_unit_master_from_first_comma_line(raw)
+        except Exception as exc:
+            logger.info(
+                "unit_master: skipped alternate header (primary had no unit column): %s",
+                exc,
+            )
+            return df
+        if _df_has_resolvable_unit_column(alt):
+            return alt
+    return df
 
 
 class UnitMasterResponse(BaseModel):
@@ -36,6 +123,29 @@ class CreateUnitBody(BaseModel):
     has_wd_expected: bool = False
 
 
+def _fail(
+    status_code: int,
+    errors: list[str],
+    data: Any = None,
+) -> JSONResponse:
+    body = UnitMasterResponse(success=False, data=data, errors=errors).model_dump()
+    return JSONResponse(status_code=status_code, content=body)
+
+
+def _prepare_dataframe_for_unit_import(df: pd.DataFrame) -> tuple[pd.DataFrame | None, JSONResponse | None]:
+    """Normalize a unit column alias to ``unit_code`` (legacy-compatible), then validate."""
+    found_columns = _list_column_names(df)
+    prepared = _normalize_unit_code_column_name_for_import(df)
+    if "unit_code" not in prepared.columns:
+        msg = "Missing required column: unit_code"
+        return None, _fail(
+            400,
+            [msg],
+            data={"message": msg, "found_columns": found_columns},
+        )
+    return prepared, None
+
+
 def _serialize(value: Any) -> Any:
     if isinstance(value, dict):
         return {k: _serialize(v) for k, v in value.items()}
@@ -46,11 +156,6 @@ def _serialize(value: Any) -> Any:
     if isinstance(value, date):
         return value.isoformat()
     return value
-
-
-def _fail(status_code: int, errors: list[str]) -> JSONResponse:
-    body = UnitMasterResponse(success=False, data=None, errors=errors).model_dump()
-    return JSONResponse(status_code=status_code, content=body)
 
 
 def _ok(data: Any = None, errors: list[str] | None = None) -> dict[str, Any]:
@@ -115,10 +220,16 @@ async def import_unit_master_csv(
         return _fail(400, ["Uploaded file is empty"])
 
     try:
-        df = pd.read_csv(BytesIO(raw))
+        df = _read_unit_master_csv(raw)
     except Exception as exc:
         logger.exception("unit_master import: CSV parse failed")
         return _fail(400, [f"Could not parse CSV: {exc}"])
+
+    prepared, prep_err = _prepare_dataframe_for_unit_import(df)
+    if prep_err is not None:
+        return prep_err
+    assert prepared is not None
+    df = prepared
 
     try:
         result = unit_service.import_unit_master(property_id, df, strict)
@@ -131,10 +242,16 @@ async def import_unit_master_csv(
         logger.exception("unit_master import: pipeline failed")
         return _fail(500, [f"Import failed: {exc}"])
 
-    created = int(result.get("created", 0))
+    err_list = result.get("errors")
+    if err_list is None:
+        err_list = []
     body = UnitMasterResponse(
         success=True,
-        data={"created": created},
+        data={
+            "created": int(result.get("created", 0)),
+            "skipped": int(result.get("skipped", 0)),
+            "errors": list(err_list),
+        },
         errors=[],
     ).model_dump()
     return JSONResponse(status_code=200, content=body)

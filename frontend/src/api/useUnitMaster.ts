@@ -18,7 +18,7 @@ type ListEnvelope = {
 
 export type ImportUnitsResponse = {
   success: boolean;
-  data: { created: number } | null;
+  data: { created: number; skipped: number; errors: string[] } | null;
   errors: string[];
 };
 
