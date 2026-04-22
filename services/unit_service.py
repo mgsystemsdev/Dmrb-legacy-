@@ -9,6 +9,7 @@ from __future__ import annotations
 from datetime import date
 from typing import TYPE_CHECKING
 
+from db.connection import transaction
 from db.repository import property_repository, unit_repository
 from domain import turnover_lifecycle
 from services import property_service, risk_service, scope_service, task_service, turnover_service
