@@ -113,7 +113,7 @@ export function AdminPage() {
       action={<PropertySelector />}
     >
       <SectionCard title="Admin Tabs">
-        <div className="tab-group flex-wrap">
+        <div className="tab-group" role="tablist" aria-label="Admin sections">
           {tabs.map((tab) => (
             <button
               key={tab.key}

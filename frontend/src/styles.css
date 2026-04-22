@@ -92,8 +92,9 @@ body {
            ring-1 ring-inset;
   }
 
+  /* w-full + flex (not inline-flex) so the bar has a bounded width and flex-wrap works */
   .tab-group {
-    @apply inline-flex rounded-lg border border-border bg-surface-2 p-1;
+    @apply flex w-full max-w-full flex-wrap gap-1 rounded-lg border border-border bg-surface-2 p-1;
   }
 
   .tab-item {
