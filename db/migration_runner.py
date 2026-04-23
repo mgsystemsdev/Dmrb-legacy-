@@ -243,3 +243,25 @@ def ensure_database_ready() -> None:
         if not cursor.fetchone()[0]:
             migration_016 = (_MIGRATIONS_DIR / "016_phase_scope_per_user.sql").read_text(encoding="utf-8")
             cursor.execute(migration_016)
+        # Apply migration 017 (unit.floor_plan, unit.gross_sq_ft) if either column is missing
+        cursor.execute(
+            """
+            SELECT EXISTS (
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND table_name = 'unit'
+                  AND column_name = 'floor_plan'
+            )
+            AND EXISTS (
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND table_name = 'unit'
+                  AND column_name = 'gross_sq_ft'
+            )
+            """
+        )
+        if not cursor.fetchone()[0]:
+            migration_017 = (_MIGRATIONS_DIR / "017_add_unit_fields.sql").read_text(encoding="utf-8")
+            cursor.execute(migration_017)
