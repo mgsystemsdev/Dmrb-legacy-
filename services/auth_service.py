@@ -111,10 +111,14 @@ def bootstrap_create_first_admin(username: str, password: str) -> dict:
 
 
 def _authenticate_db(username: str, password: str) -> dict | None:
+    import logging
+    logger = logging.getLogger(__name__)
     row = user_repository.get_active_by_username(username)
     if row is None:
+        logger.warning("Auth failed: user '%s' not found", username)
         return None
     if not verify_password(row["password_hash"], password):
+        logger.warning("Auth failed: password mismatch for user '%s'", username)
         return None
     role = row["role"]
     access_mode = "validator_only" if role == "validator" else "full"
