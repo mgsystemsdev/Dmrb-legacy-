@@ -6,9 +6,11 @@ import { toast } from "sonner";
 import { api } from "../api/client";
 import { useScopedPropertyPhases } from "../api/usePhaseScope";
 import {
+  coalesceUnitMasterImportReport,
   useCreateUnit,
   useImportUnits,
   useUnits,
+  type UnitMasterImportReport,
   type UnitRow,
 } from "../api/useUnitMaster";
 import { PageShell } from "../components/PageShell";
@@ -43,12 +45,10 @@ type UnitsGridRow = UnitRow & {
   created_at?: string | null;
 };
 
-/** Last import outcome from a successful /api/unit-master/import (200) or from error body (4xx) for display. */
-type UnitMasterImportResultDisplay = {
-  created: number;
-  skipped: number;
-  errors: string[];
-};
+/** Last import outcome: real commit, dry-run report, or blocked-by-validation report. */
+type UnitMasterImportResultView =
+  | { kind: "commit"; created: number; skipped: number; errors: string[] }
+  | { kind: "report"; dryRun: boolean; report: UnitMasterImportReport };
 
 function importErrorsFromAxiosData(
   data: unknown,
@@ -88,15 +88,32 @@ export function UnitMasterPage() {
   const [activeOnly, setActiveOnly] = useState(true);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [strictImport, setStrictImport] = useState(false);
+  const [dryRunImport, setDryRunImport] = useState(false);
+  const [reportRowFilter, setReportRowFilter] = useState<"all" | "error" | "warning">("all");
   const [quickSearch, setQuickSearch] = useState("");
-  const [importResult, setImportResult] = useState<UnitMasterImportResultDisplay | null>(null);
+  const [importResult, setImportResult] = useState<UnitMasterImportResultView | null>(null);
 
   const unitsQuery = useUnits(propertyId, { activeOnly });
   const importMutation = useImportUnits();
 
   useEffect(() => {
     setImportResult(null);
+    setReportRowFilter("all");
   }, [propertyId]);
+
+  const filteredReportRows = useMemo(() => {
+    if (!importResult || importResult.kind !== "report") {
+      return [];
+    }
+    const rows = importResult.report.rows;
+    if (reportRowFilter === "error") {
+      return rows.filter((row) => row.status === "error");
+    }
+    if (reportRowFilter === "warning") {
+      return rows.filter((row) => row.status === "warning");
+    }
+    return rows;
+  }, [importResult, reportRowFilter]);
 
   const colDefs = useMemo<ColDef<UnitsGridRow>[]>(
     () => [
@@ -195,6 +212,15 @@ export function UnitMasterPage() {
                 />
                 Strict mode (no new units; existing codes only)
               </label>
+              <label className="flex items-center gap-2 text-sm text-text">
+                <input
+                  type="checkbox"
+                  checked={dryRunImport}
+                  disabled={importMutation.isPending}
+                  onChange={(event) => setDryRunImport(event.target.checked)}
+                />
+                Dry run (validate only; no database changes)
+              </label>
               <button
                 type="button"
                 className="btn-primary"
@@ -204,8 +230,9 @@ export function UnitMasterPage() {
                     return;
                   }
                   setImportResult(null);
+                  setReportRowFilter("all");
                   importMutation.mutate(
-                    { propertyId, file: importFile, strict: strictImport },
+                    { propertyId, file: importFile, strict: strictImport, dryRun: dryRunImport },
                     {
                       onSuccess: (data) => {
                         if (!data.success) {
@@ -217,8 +244,31 @@ export function UnitMasterPage() {
                           toast.error("Import returned no data");
                           return;
                         }
+                        if ("rows" in d) {
+                          const raw = d as Record<string, unknown>;
+                          const dry = Boolean(raw.dry_run);
+                          const r = coalesceUnitMasterImportReport(d, dry);
+                          setImportResult({ kind: "report", dryRun: r.dry_run, report: r });
+                          if (r.dry_run) {
+                            if (r.has_blocking_errors) {
+                              toast("Dry run: rows contain errors (import would be blocked).", {
+                                description: `Errors: ${r.error_rows} · Warnings: ${r.warning_rows}`,
+                              });
+                            } else {
+                              toast.success(
+                                `Dry run: ${r.valid_rows} valid, ${r.warning_rows} warning(s) — no DB changes`,
+                              );
+                            }
+                          }
+                          return;
+                        }
+                        if (!("created" in d)) {
+                          toast.error("Import returned unexpected data");
+                          return;
+                        }
                         const rowErrors = Array.isArray(d.errors) ? d.errors : [];
                         setImportResult({
+                          kind: "commit",
                           created: d.created,
                           skipped: d.skipped,
                           errors: rowErrors,
@@ -238,9 +288,27 @@ export function UnitMasterPage() {
                         const msg = formatAxiosMessage(error);
                         toast.error(msg);
                         if (axios.isAxiosError(error) && error.response?.data) {
+                          const body = error.response.data as {
+                            data?: { report?: UnitMasterImportReport };
+                            errors?: string[];
+                          };
+                          if (body.data?.report) {
+                            setReportRowFilter("all");
+                            setImportResult({
+                              kind: "report",
+                              dryRun: false,
+                              report: coalesceUnitMasterImportReport(body.data.report, false),
+                            });
+                            return;
+                          }
                           const rowErrors = importErrorsFromAxiosData(error.response.data);
                           if (rowErrors.length) {
-                            setImportResult({ created: 0, skipped: 0, errors: rowErrors });
+                            setImportResult({
+                              kind: "commit",
+                              created: 0,
+                              skipped: 0,
+                              errors: rowErrors,
+                            });
                           }
                         }
                       },
@@ -248,7 +316,11 @@ export function UnitMasterPage() {
                   );
                 }}
               >
-                {importMutation.isPending ? "Importing…" : "Run import"}
+                {importMutation.isPending
+                  ? "Working…"
+                  : dryRunImport
+                    ? "Run dry run"
+                    : "Run import"}
               </button>
             </div>
 
@@ -258,38 +330,143 @@ export function UnitMasterPage() {
                 role="status"
                 aria-live="polite"
               >
-                <p className="text-sm font-medium text-text">Last import</p>
-                <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm text-text">
-                  <div className="flex gap-1.5">
-                    <dt className="text-muted">Created</dt>
-                    <dd className="font-medium tabular-nums">{importResult.created}</dd>
-                  </div>
-                  <div className="flex gap-1.5">
-                    <dt className="text-muted">Skipped</dt>
-                    <dd className="font-medium tabular-nums">{importResult.skipped}</dd>
-                  </div>
-                  <div className="flex gap-1.5">
-                    <dt className="text-muted">Errors</dt>
-                    <dd className="font-medium tabular-nums">{importResult.errors.length}</dd>
-                  </div>
-                </dl>
-                {importResult.errors.length > 0 ? (
-                  <div className="mt-3">
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted">
-                      Row and validation messages
+                {importResult.kind === "commit" ? (
+                  <>
+                    <p className="text-sm font-medium text-text">Last import</p>
+                    <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm text-text">
+                      <div className="flex gap-1.5">
+                        <dt className="text-muted">Created</dt>
+                        <dd className="font-medium tabular-nums">{importResult.created}</dd>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <dt className="text-muted">Skipped</dt>
+                        <dd className="font-medium tabular-nums">{importResult.skipped}</dd>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <dt className="text-muted">Errors</dt>
+                        <dd className="font-medium tabular-nums">{importResult.errors.length}</dd>
+                      </div>
+                    </dl>
+                    {importResult.errors.length > 0 ? (
+                      <div className="mt-3">
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted">
+                          Row and validation messages
+                        </p>
+                        <ul
+                          className="mt-2 max-h-48 list-none space-y-1.5 overflow-y-auto overscroll-y-contain rounded border border-border/80 bg-surface-1/40 py-2 pl-2 pr-2 text-sm text-text"
+                          role="list"
+                        >
+                          {importResult.errors.map((err, i) => (
+                            <li
+                              key={`${i}-${err.slice(0, 32)}`}
+                              className="break-words border-b border-border/30 pb-1.5 last:border-b-0 last:pb-0"
+                            >
+                              {err}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm font-medium text-text">
+                      {importResult.dryRun ? "Dry run report" : "Import blocked (validation)"}
+                    </p>
+                    <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm text-text">
+                      <div className="flex gap-1.5">
+                        <dt className="text-muted">Total rows</dt>
+                        <dd className="font-medium tabular-nums">
+                          {importResult.report.total_rows}
+                        </dd>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <dt className="text-muted">Valid</dt>
+                        <dd className="font-medium tabular-nums">
+                          {importResult.report.valid_rows}
+                        </dd>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <dt className="text-muted">Warnings</dt>
+                        <dd className="font-medium tabular-nums">
+                          {importResult.report.warning_rows}
+                        </dd>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <dt className="text-muted">Errors</dt>
+                        <dd className="font-medium tabular-nums">
+                          {importResult.report.error_rows}
+                        </dd>
+                      </div>
+                    </dl>
+                    {importResult.report.file_messages.length > 0 ? (
+                      <ul className="mt-2 list-disc pl-5 text-sm text-amber-200/90">
+                        {importResult.report.file_messages.map((m, i) => (
+                          <li key={`f-${i}-${m}`}>{m}</li>
+                        ))}
+                      </ul>
+                    ) : null}
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-medium uppercase tracking-wide text-muted">
+                        Row filter
+                      </span>
+                      {(["all", "error", "warning"] as const).map((f) => (
+                        <button
+                          key={f}
+                          type="button"
+                          className={
+                            reportRowFilter === f
+                              ? "rounded border border-border bg-surface-1 px-2 py-1 text-xs text-text"
+                              : "rounded border border-border/50 px-2 py-1 text-xs text-muted hover:text-text"
+                          }
+                          onClick={() => setReportRowFilter(f)}
+                        >
+                          {f === "all" ? "All rows" : f === "error" ? "Errors only" : "Warnings only"}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="mt-2 text-xs text-muted">
+                      {filteredReportRows.length} of {importResult.report.rows.length} row(s) shown.
+                      row_index is 0-based in the parsed data (CSV header is not a row).
                     </p>
                     <ul
-                      className="mt-2 max-h-48 list-none space-y-1.5 overflow-y-auto overscroll-y-contain rounded border border-border/80 bg-surface-1/40 py-2 pl-2 pr-2 text-sm text-text"
+                      className="mt-2 max-h-64 list-none space-y-2 overflow-y-auto overscroll-y-contain rounded border border-border/80 bg-surface-1/40 py-2 pl-2 pr-2 text-sm text-text"
                       role="list"
                     >
-                      {importResult.errors.map((err, i) => (
-                        <li key={`${i}-${err.slice(0, 32)}`} className="break-words border-b border-border/30 pb-1.5 last:border-b-0 last:pb-0">
-                          {err}
+                      {filteredReportRows.map((r) => (
+                        <li
+                          key={`${r.row_index}-${r.status}`}
+                          className="border-b border-border/30 pb-2 last:border-b-0 last:pb-0"
+                        >
+                          <span
+                            className={
+                              r.status === "error"
+                                ? "text-red-200"
+                                : r.status === "warning"
+                                  ? "text-amber-200"
+                                  : "text-text"
+                            }
+                          >
+                            Row {r.row_index}
+                            {r.unit_code != null ? ` — ${r.unit_code}` : ""} — {r.status}
+                          </span>
+                          {r.messages.length > 0 ? (
+                            <ul className="ml-2 mt-1 list-disc text-xs text-text/90">
+                              {r.messages.map((m, j) => (
+                                <li key={`m-${j}`}>{m}</li>
+                              ))}
+                            </ul>
+                          ) : null}
+                          {r.actions.length > 0 ? (
+                            <pre className="mt-1 max-w-full overflow-x-auto whitespace-pre-wrap break-words rounded bg-surface-2/50 p-1.5 text-xs text-muted">
+                              {r.actions.join("\n")}
+                            </pre>
+                          ) : null}
                         </li>
                       ))}
                     </ul>
-                  </div>
-                ) : null}
+                  </>
+                )}
               </div>
             ) : null}
           </SectionCard>

@@ -13,6 +13,11 @@ from pydantic import BaseModel, Field
 from api.deps import get_current_user
 from services import property_service, unit_service
 from services.unit_service import UnitMasterImportError
+from services.unit_master_import_plan import (
+    build_unit_master_import_report,
+    empty_unit_master_report,
+    normalize_unit_master_report,
+)
 from services.write_guard import WritesDisabledError, check_writes_enabled
 
 logger = logging.getLogger(__name__)
@@ -166,6 +171,22 @@ def _ok(data: Any = None, errors: list[str] | None = None) -> dict[str, Any]:
     ).model_dump()
 
 
+def _unit_master_report_envelope(
+    *, dry_run: bool, report: dict[str, Any]
+) -> dict[str, Any]:
+    """Single contract for 200 dry-run and 422 gate responses (row-level + top-level)."""
+    return {
+        "dry_run": dry_run,
+        "total_rows": int(report.get("total_rows", 0)),
+        "valid_rows": int(report.get("valid_rows", 0)),
+        "warning_rows": int(report.get("warning_rows", 0)),
+        "error_rows": int(report.get("error_rows", 0)),
+        "file_messages": list(report.get("file_messages") or []),
+        "rows": list(report.get("rows") or []),
+        "has_blocking_errors": bool(report.get("has_blocking_errors", False)),
+    }
+
+
 def _validate_property_id(property_id: int) -> JSONResponse | None:
     if property_id < 1:
         return _fail(400, ["property_id must be a positive integer"])
@@ -203,6 +224,7 @@ def _validate_create_placement(
 async def import_unit_master_csv(
     property_id: int = Form(...),
     strict: bool = Form(False),
+    dry_run: bool = Form(False),
     file: UploadFile = File(...),
     user: dict = Depends(get_current_user),
 ):
@@ -210,14 +232,26 @@ async def import_unit_master_csv(
     if prop_err is not None:
         return prop_err
 
-    try:
-        check_writes_enabled()
-    except WritesDisabledError as exc:
-        return _fail(400, [str(exc)])
-
     raw = await file.read()
     if not raw:
-        return _fail(400, ["Uploaded file is empty"])
+        rep = normalize_unit_master_report(
+            {
+                **empty_unit_master_report(),
+                "file_messages": ["File is empty (no data bytes)."],
+            }
+        )
+        if dry_run:
+            body = UnitMasterResponse(
+                success=True,
+                data={**_unit_master_report_envelope(dry_run=True, report=rep)},
+                errors=[],
+            ).model_dump()
+            return JSONResponse(status_code=200, content=body)
+        return _fail(
+            422,
+            ["File is empty; nothing to import."],
+            data={"report": _unit_master_report_envelope(dry_run=False, report=rep)},
+        )
 
     try:
         df = _read_unit_master_csv(raw)
@@ -232,9 +266,35 @@ async def import_unit_master_csv(
     df = prepared
 
     try:
+        report = build_unit_master_import_report(property_id, df, strict)
+    except Exception as exc:
+        logger.exception("unit_master import: validation report failed")
+        return _fail(500, [f"Validation failed: {exc}"])
+    report = normalize_unit_master_report(report)
+
+    if dry_run:
+        body = UnitMasterResponse(
+            success=True,
+            data=_unit_master_report_envelope(dry_run=True, report=report),
+            errors=[],
+        ).model_dump()
+        return JSONResponse(status_code=200, content=body)
+
+    if report["has_blocking_errors"]:
+        return _fail(
+            422,
+            ["Import blocked: one or more rows have errors."],
+            data={"report": _unit_master_report_envelope(dry_run=False, report=report)},
+        )
+
+    try:
+        check_writes_enabled()
+    except WritesDisabledError as exc:
+        return _fail(400, [str(exc)])
+
+    try:
         result = unit_service.import_unit_master(property_id, df, strict)
     except UnitMasterImportError as exc:
-        # All-or-nothing: no created count, no partial payload (transaction rolled back).
         return _fail(422, exc.errors)
     except WritesDisabledError as exc:
         return _fail(400, [str(exc)])
@@ -248,6 +308,7 @@ async def import_unit_master_csv(
     body = UnitMasterResponse(
         success=True,
         data={
+            "dry_run": False,
             "created": int(result.get("created", 0)),
             "skipped": int(result.get("skipped", 0)),
             "errors": list(err_list),
