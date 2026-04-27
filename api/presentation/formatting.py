@@ -176,10 +176,7 @@ def board_breach_row_display(item: dict) -> BoardBreachDisplay:
         is_insp = priority == "INSPECTION_DELAY"
         is_sla = priority == "SLA_RISK" or sla_level in ("WARNING", "BREACH")
         is_mi = pressure is not None and pressure <= 3
-        is_plan = (
-            readiness_st == "BLOCKED"
-            and priority not in ("MOVE_IN_DANGER", "SLA_RISK")
-        )
+        is_plan = readiness_st == "BLOCKED" and priority not in ("MOVE_IN_DANGER", "SLA_RISK")
 
     def _dot(red: bool) -> str:
         return "🔴" if red else "🟢"
@@ -202,9 +199,7 @@ def board_breach_row_display(item: dict) -> BoardBreachDisplay:
         tasks: list[dict] = []
     else:
         tasks = tasks_raw
-        has_incomplete_tasks = any(
-            t.get("execution_status") != "COMPLETE" for t in tasks
-        )
+        has_incomplete_tasks = any(t.get("execution_status") != "COMPLETE" for t in tasks)
 
     inspection_task = next(
         (t for t in tasks if t.get("task_type") in BOARD_INSPECTION_TASK_TYPES),
@@ -285,9 +280,9 @@ def alert_icon(priority: str) -> str:
 
 
 def qc_label(tasks: list[dict]) -> str:
-    """QC status: Confirmed when all completed tasks have manager_confirmed_at."""
-    completed = [task for task in tasks if task["execution_status"] == "COMPLETE"]
-    if not completed:
-        return "Pending"
-    all_confirmed = all(task.get("manager_confirmed_at") is not None for task in completed)
-    return "Confirmed" if all_confirmed else "Pending"
+    """QC Done when all required+blocking tasks are COMPLETE or SKIPPED."""
+    required_blocking = [t for t in tasks if t.get("required") and t.get("blocking")]
+    if not required_blocking:
+        return "QC Done"
+    all_done = all(t.get("execution_status") in ("COMPLETE", "SKIPPED") for t in required_blocking)
+    return "QC Done" if all_done else "QC Not Done"

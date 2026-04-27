@@ -5,20 +5,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Run Commands
 
 ```bash
-# App
-streamlit run app.py
+# Backend (dev)
+uvicorn api.main:app --reload --port 8000
+# or: make dev
+
+# Frontend (dev)
+cd frontend && npm run dev
+# or: make frontend-dev
 
 # Tests
 pytest tests/
 pytest tests/domain/test_lifecycle.py   # single file
 pytest tests/services/test_board.py     # single file
+# or: make test / make test-domain / make test-services
 
 # Nightly automation (can backtest with --date)
 python scripts/run_midnight_automation.py
 python scripts/run_midnight_automation.py --date 2026-03-16
 ```
 
-No build step — pure Python. Schema is bootstrapped automatically on first run via `ui/data/backend.py` → `db/migration_runner.py`.
+No build step for the backend — pure Python. Schema is bootstrapped automatically on startup via `api/main.py` → `db/migration_runner.py:ensure_database_ready()`.
 
 ### Multi-checkout (legacy vs prod)
 

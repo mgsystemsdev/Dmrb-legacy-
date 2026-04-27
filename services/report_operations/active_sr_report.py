@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import io
 from dataclasses import dataclass
+
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
@@ -38,11 +39,11 @@ _ANCHOR_COLS: list[int] = [2, 8, 14, 20, 26, 32, 38]
 
 # The five output columns for every filtered table (source_key, header_label)
 _TABLE_COLS: list[tuple[str, str]] = [
-    ("Location",    "Unit"),
+    ("Location", "Unit"),
     ("Assigned to", "Assigned To"),
-    ("Days open",   "Days Open"),
-    ("Issue",       "Issue"),
-    ("Status",      "Status"),
+    ("Days open", "Days Open"),
+    ("Issue", "Issue"),
+    ("Status", "Status"),
 ]
 
 # Fixed column widths matching the five output columns
@@ -94,7 +95,7 @@ class FilterParams:
 class SectionDef:
     """One horizontal table block on a sheet."""
 
-    title: str          # text for the merged title cell(s) above the table
+    title: str  # text for the merged title cell(s) above the table
     filter: FilterParams
 
 
@@ -152,9 +153,7 @@ def _filter_rows(rows: list[dict], fp: FilterParams) -> list[dict]:
     # Phase filter — strict: row ph must exactly match one allowed token (after
     # strip + uppercase). Rows with missing/blank ph never pass.
     if fp.phases is not None:
-        allowed = frozenset(
-            str(p).strip().upper() for p in fp.phases if str(p).strip()
-        )
+        allowed = frozenset(str(p).strip().upper() for p in fp.phases if str(p).strip())
         if not allowed:
             result = []
         else:
@@ -167,28 +166,18 @@ def _filter_rows(rows: list[dict], fp: FilterParams) -> list[dict]:
     # Assigned / unassigned filter
     if fp.unassigned_mode == "broad":
         result = [
-            r for r in result
-            if str(r.get("Assigned to") or "").strip() in ("Unassigned", "")
+            r for r in result if str(r.get("Assigned to") or "").strip() in ("Unassigned", "")
         ]
     elif fp.unassigned_mode == "strict":
-        result = [
-            r for r in result
-            if str(r.get("Assigned to") or "").strip() == "Unassigned"
-        ]
+        result = [r for r in result if str(r.get("Assigned to") or "").strip() == "Unassigned"]
     elif fp.assigned is not None:
         target = fp.assigned.lower()
-        result = [
-            r for r in result
-            if str(r.get("Assigned to") or "").strip().lower() == target
-        ]
+        result = [r for r in result if str(r.get("Assigned to") or "").strip().lower() == target]
 
     # Status filter
     if fp.status is not None:
         target_s = fp.status.lower()
-        result = [
-            r for r in result
-            if str(r.get("Status") or "").strip().lower() == target_s
-        ]
+        result = [r for r in result if str(r.get("Status") or "").strip().lower() == target_s]
 
     # Sort Days open descending
     result = sorted(result, key=_safe_days, reverse=True)
@@ -229,7 +218,6 @@ def _write_title_block(
     col_end = col_start + len(_TABLE_COLS) - 1
 
     start_cell = ws.cell(row=title_row, column=col_start)
-    end_letter = get_column_letter(col_end)
 
     ws.merge_cells(
         start_row=title_row,
@@ -314,7 +302,8 @@ def _render_report(config: ReportConfig, rows: list[dict]) -> Workbook:
             if sheet_def.classification is not None:
                 clsf = sheet_def.classification.lower()
                 rows_to_write = [
-                    r for r in rows_to_write
+                    r
+                    for r in rows_to_write
                     if str(r.get("wo_classification") or "").lower() == clsf
                 ]
             _write_flat_sheet(ws, rows_to_write, header_bg=_C_HEADER_BLACK)
@@ -333,7 +322,6 @@ def _render_report(config: ReportConfig, rows: list[dict]) -> Workbook:
 WEST_CONFIG = ReportConfig(
     report_name="WEST",
     sheets=[
-
         # Sheet 1: raw data source — filtered to WEST phases only
         SheetDef(
             tab_name="ServiceRequest",
@@ -343,7 +331,6 @@ WEST_CONFIG = ReportConfig(
             kind="raw_dump",
             phases=_PHASES_WEST,
         ),
-
         # Sheet 2: cross-phase overview (5 tables, title rows 3–4, data row 5)
         SheetDef(
             tab_name="Full_unassign",
@@ -372,11 +359,10 @@ WEST_CONFIG = ReportConfig(
                 ),
             ],
         ),
-
         # Sheet 3: manager + team In-progress (6 tables, title rows 2–3, data row 4)
         # Source scripts #6–#11: assignee/status only — no phase filter.
         SheetDef(
-            tab_name="By tech ",          # trailing space is intentional
+            tab_name="By tech ",  # trailing space is intentional
             title_row=2,
             data_row=4,
             sections=[
@@ -421,7 +407,6 @@ WEST_CONFIG = ReportConfig(
                 ),
             ],
         ),
-
         # Sheet 4: unassigned index by sub-phase (3 tables, title rows 2–3, data row 4)
         SheetDef(
             tab_name="unassign",
@@ -442,7 +427,6 @@ WEST_CONFIG = ReportConfig(
                 ),
             ],
         ),
-
         # Sheet 5: Phase 3 deep-dive (7 tables, title rows 3–4, data row 5)
         # Sections 1–2: source scripts #9/#14 — assignee+status only, no phase filter.
         # Sections 4–7: source scripts #16–#19 — include phase 3 filter.
@@ -503,7 +487,6 @@ WEST_CONFIG = ReportConfig(
                 ),
             ],
         ),
-
         # Sheet 6: Phase 4 deep-dive (7 tables)
         # Sections 1–2: source scripts #8/#20 — assignee+status only, no phase filter.
         # Sections 4–7: source scripts #22–#25 — include phase 4 filter.
@@ -564,7 +547,6 @@ WEST_CONFIG = ReportConfig(
                 ),
             ],
         ),
-
         # Sheet 7: Phase 4c deep-dive (3 tables — only Victor covers this phase)
         SheetDef(
             tab_name="Phase 4c",
@@ -593,7 +575,6 @@ WEST_CONFIG = ReportConfig(
                 ),
             ],
         ),
-
         # Sheet 8: Make Ready — all Make Ready WOs in WEST phases (flat, all columns)
         SheetDef(
             tab_name="Make Ready",
@@ -615,7 +596,6 @@ WEST_CONFIG = ReportConfig(
 EAST_CONFIG = ReportConfig(
     report_name="EAST",
     sheets=[
-
         # Sheet 1: raw data source — Robert portfolio phases only (matches WEST scoping)
         SheetDef(
             tab_name="ServiceRequest",
@@ -625,7 +605,6 @@ EAST_CONFIG = ReportConfig(
             kind="raw_dump",
             phases=_PHASES_EAST,
         ),
-
         # Sheet 2: portfolio overview (6 tables, title rows 3–4, data row 5)
         # Cols 1–2: EAST-phase full dump + unassigned; 3–4: EAST; 5–6: Mabi cross-view 3/4/4c.
         SheetDef(
@@ -655,14 +634,15 @@ EAST_CONFIG = ReportConfig(
                 ),
                 SectionDef(
                     title="Full Service request  Report Unassigned Mabi",
-                    filter=FilterParams(phases=frozenset({"3", "4", "4c"}), unassigned_mode="broad"),
+                    filter=FilterParams(
+                        phases=frozenset({"3", "4", "4c"}), unassigned_mode="broad"
+                    ),
                 ),
             ],
         ),
-
         # Sheet 3: manager + team In-progress (5 tables — Robert has 4 techs vs Mabi's 5)
         SheetDef(
-            tab_name="By tech ",          # trailing space intentional
+            tab_name="By tech ",  # trailing space intentional
             title_row=2,
             data_row=4,
             sections=[
@@ -704,7 +684,6 @@ EAST_CONFIG = ReportConfig(
                 ),
             ],
         ),
-
         # Sheet 4: unassigned index by sub-phase (3 tables — 5 / 7 / 8 only)
         SheetDef(
             tab_name="unassign",
@@ -725,7 +704,6 @@ EAST_CONFIG = ReportConfig(
                 ),
             ],
         ),
-
         # Sheet 5: Phase 5 (5 tables — Latrell + Yomar)
         SheetDef(
             tab_name="Phase 5",
@@ -770,7 +748,6 @@ EAST_CONFIG = ReportConfig(
                 ),
             ],
         ),
-
         # Sheet 6: Phase 7 (3 tables — Barron only)
         SheetDef(
             tab_name="Phase 7",
@@ -799,7 +776,6 @@ EAST_CONFIG = ReportConfig(
                 ),
             ],
         ),
-
         # Sheet 7: Phase 8 (3 tables — Antonio only)
         SheetDef(
             tab_name="Phase 8",
@@ -828,7 +804,6 @@ EAST_CONFIG = ReportConfig(
                 ),
             ],
         ),
-
         # Sheet 8: Make Ready — all Make Ready WOs in EAST phases (flat, all columns)
         SheetDef(
             tab_name="Make Ready",

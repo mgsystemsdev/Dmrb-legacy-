@@ -28,7 +28,7 @@ def _turnover(move_out_date, **kw):
     }
 
 
-def _task(execution_status="NOT_STARTED", required=True, blocking=True, vendor_due_date=None, **kw):
+def _task(execution_status="SCHEDULED", required=True, blocking=True, vendor_due_date=None, **kw):
     return {
         "task_id": 1,
         "task_type": "PAINT",
@@ -50,6 +50,7 @@ class TestNoTasks:
 
     def test_priority_no_tasks_depends_on_phase_and_sla(self):
         from domain.priority_engine import priority_level
+
         t = _turnover(TODAY + timedelta(days=5))
         level = priority_level(t, [], today=TODAY)
         assert level in ("LOW", "NORMAL", "SLA_RISK", "MOVE_IN_DANGER", "INSPECTION_DELAY")
@@ -75,7 +76,7 @@ class TestMoveInNone:
 
     def test_dtbr_not_capped_when_no_move_in(self):
         t = _turnover(TODAY - timedelta(days=5))
-        tasks = [_task(execution_status="NOT_STARTED", vendor_due_date=TODAY + timedelta(days=10))]
+        tasks = [_task(execution_status="SCHEDULED", vendor_due_date=TODAY + timedelta(days=10))]
         assert turnover_lifecycle.days_to_be_ready(t, tasks, today=TODAY) == 10
 
 
@@ -93,7 +94,7 @@ class TestFutureMoveOut:
 class TestAllOptionalTasks:
     def test_readiness_ready_when_no_required_blocking(self):
         tasks = [
-            _task(required=False, blocking=False, execution_status="NOT_STARTED"),
+            _task(required=False, blocking=False, execution_status="SCHEDULED"),
         ]
         assert readiness.readiness_state(tasks) == READY
 
@@ -102,7 +103,11 @@ class TestTasksWithVendorDueDateNone:
     def test_dtbr_excludes_tasks_without_due_date(self):
         t = _turnover(TODAY - timedelta(days=5))
         tasks = [
-            _task(execution_status="NOT_STARTED", vendor_due_date=None),
-            _task(task_type="CLEAN", execution_status="NOT_STARTED", vendor_due_date=TODAY + timedelta(days=3)),
+            _task(execution_status="SCHEDULED", vendor_due_date=None),
+            _task(
+                task_type="CLEAN",
+                execution_status="SCHEDULED",
+                vendor_due_date=TODAY + timedelta(days=3),
+            ),
         ]
         assert turnover_lifecycle.days_to_be_ready(t, tasks, today=TODAY) == 3

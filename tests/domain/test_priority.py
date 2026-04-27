@@ -10,7 +10,6 @@ from domain.priority_engine import (
     MOVE_IN_DANGER,
     NORMAL,
     PLAN_DELAY,
-    PRIORITY_ORDER,
     SLA_RISK_LEVEL,
     derive_priority_from_agreements,
     priority_level,
@@ -37,7 +36,7 @@ def _turnover(move_out_date, **kw):
 
 def _task(
     task_type="PAINT",
-    execution_status="NOT_STARTED",
+    execution_status="SCHEDULED",
     required=True,
     blocking=True,
     **kw,
@@ -76,9 +75,9 @@ class TestPriorityLevel:
         # move_out recent (within SLA OK window), tasks are BLOCKED
         t = _turnover(TODAY - timedelta(days=3))
         tasks = [
-            _task(execution_status="COMPLETED"),
+            _task(execution_status="COMPLETE"),
             _task(task_type="CLEAN", execution_status="SCHEDULED"),
-            _task(task_type="INSPECT", execution_status="NOT_STARTED"),
+            _task(task_type="INSPECT", execution_status="SCHEDULED"),
         ]
         assert priority_level(t, tasks, today=TODAY) == INSPECTION_DELAY
 
@@ -96,7 +95,7 @@ class TestPriorityLevel:
             TODAY - timedelta(days=5),
             manual_ready_status="Vacant Ready",
         )
-        tasks = [_task(execution_status="COMPLETED")]
+        tasks = [_task(execution_status="COMPLETE")]
         assert priority_level(t, tasks, today=TODAY) == LOW
 
 
@@ -124,14 +123,14 @@ class TestCrossFunctionConsistency:
     def test_readiness_blocked_to_ready_changes_priority(self):
         t = _turnover(TODAY - timedelta(days=3))
         tasks_blocked = [
-            _task(execution_status="COMPLETED"),
+            _task(execution_status="COMPLETE"),
             _task(task_type="CLEAN", execution_status="SCHEDULED"),
-            _task(task_type="INSPECT", execution_status="NOT_STARTED"),
+            _task(task_type="INSPECT", execution_status="SCHEDULED"),
         ]
         tasks_ready = [
-            _task(execution_status="COMPLETED"),
-            _task(task_type="CLEAN", execution_status="COMPLETED"),
-            _task(task_type="INSPECT", execution_status="COMPLETED"),
+            _task(execution_status="COMPLETE"),
+            _task(task_type="CLEAN", execution_status="COMPLETE"),
+            _task(task_type="INSPECT", execution_status="COMPLETE"),
         ]
         assert priority_level(t, tasks_blocked, today=TODAY) == INSPECTION_DELAY
         assert priority_level(t, tasks_ready, today=TODAY) == NORMAL
@@ -236,17 +235,23 @@ class TestUrgencySortKey:
     def test_move_in_sorts_before_no_move_in(self):
         t_mi = _turnover(TODAY - timedelta(days=5), move_in_date=TODAY + timedelta(days=10))
         t_no = _turnover(TODAY - timedelta(days=30))
-        assert urgency_sort_key(NORMAL, t_mi, today=TODAY) < urgency_sort_key(NORMAL, t_no, today=TODAY)
+        assert urgency_sort_key(NORMAL, t_mi, today=TODAY) < urgency_sort_key(
+            NORMAL, t_no, today=TODAY
+        )
 
     def test_closer_move_in_sorts_first(self):
         t_soon = _turnover(TODAY - timedelta(days=5), move_in_date=TODAY + timedelta(days=3))
         t_later = _turnover(TODAY - timedelta(days=5), move_in_date=TODAY + timedelta(days=20))
-        assert urgency_sort_key(NORMAL, t_soon, today=TODAY) < urgency_sort_key(NORMAL, t_later, today=TODAY)
+        assert urgency_sort_key(NORMAL, t_soon, today=TODAY) < urgency_sort_key(
+            NORMAL, t_later, today=TODAY
+        )
 
     def test_higher_dv_sorts_first_when_no_move_in(self):
         t_old = _turnover(TODAY - timedelta(days=30))
         t_new = _turnover(TODAY - timedelta(days=5))
-        assert urgency_sort_key(NORMAL, t_old, today=TODAY) < urgency_sort_key(NORMAL, t_new, today=TODAY)
+        assert urgency_sort_key(NORMAL, t_old, today=TODAY) < urgency_sort_key(
+            NORMAL, t_new, today=TODAY
+        )
 
     def test_pre1990_sentinel_treated_as_no_move_in(self):
         t = _turnover(TODAY - timedelta(days=10), move_in_date=date(1900, 1, 1))

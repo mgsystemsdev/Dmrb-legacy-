@@ -1,0 +1,85 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [dev]
+
+jobs:
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - run: pip install ruff
+
+      - run: ruff check .
+
+      - run: ruff format --check .
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: dmrb_test
+          POSTGRES_USER: dmrb
+          POSTGRES_PASSWORD: dmrb_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Run migrations
+        env:
+          DATABASE_URL: postgresql://dmrb:dmrb_test@localhost:5432/dmrb_test
+        run: python -c "from db.migration_runner import ensure_database_ready; ensure_database_ready()"
+
+      - name: Domain tests
+        run: pytest tests/domain/ -v
+
+      - name: Service tests
+        env:
+          DATABASE_URL: postgresql://dmrb:dmrb_test@localhost:5432/dmrb_test
+        run: pytest tests/services/ -v
+
+  frontend-build:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Build (TypeScript + Vite)
+        run: npm run build
+        working-directory: frontend

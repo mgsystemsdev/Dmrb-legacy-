@@ -10,7 +10,6 @@ from datetime import date
 
 from domain.availability_status import effective_manual_ready_status
 
-
 # ── Lifecycle Phases ─────────────────────────────────────────────────────────
 
 PHASE_PRE_NOTICE = "PRE_NOTICE"
@@ -76,12 +75,17 @@ def lifecycle_phase(turnover: dict, today: date | None = None) -> str:
     move_out = turnover["move_out_date"]
 
     if move_out > today:
-        return PHASE_ON_NOTICE if effective_manual_ready_status(turnover, today) == "On Notice" else PHASE_PRE_NOTICE
+        return (
+            PHASE_ON_NOTICE
+            if effective_manual_ready_status(turnover, today) == "On Notice"
+            else PHASE_PRE_NOTICE
+        )
 
     return PHASE_VACANT_NOT_READY
 
 
 # ── Time Deltas ──────────────────────────────────────────────────────────────
+
 
 def days_since_move_out(turnover: dict, today: date | None = None) -> int | None:
     """Days elapsed since move-out. Negative means move-out is in the future."""
@@ -126,6 +130,7 @@ def turnover_window_days(turnover: dict) -> int | None:
 
 # ── State Checks ─────────────────────────────────────────────────────────────
 
+
 def _move_in_date_for_schedule(turnover: dict) -> date | None:
     """Move-in date used for DTBR caps / fallback; ignores legacy pre-1990 sentinels."""
     move_in = turnover.get("move_in_date")
@@ -141,16 +146,26 @@ def days_to_be_ready(
     tasks: list[dict],
     today: date | None = None,
 ) -> int:
-    """Days To Be Rented — countdown to move-in day.
+    """Days until ready: move-in countdown when scheduled, vendor due date otherwise.
 
-    Returns days until ``move_in_date`` (minimum 0).
-    Returns 0 when no move-in is scheduled.
+    When move_in_date is set, returns days until move-in (minimum 0).
+    When no move-in is scheduled, returns days until the latest vendor_due_date
+    across incomplete tasks (COMPLETE and SKIPPED excluded). Returns 0 when
+    there are no incomplete tasks with a due date.
     """
     today = today or date.today()
     move_in = _move_in_date_for_schedule(turnover)
-    if move_in is None:
+    if move_in is not None:
+        return max((move_in - today).days, 0)
+    due_dates = [
+        t["vendor_due_date"]
+        for t in tasks
+        if t.get("vendor_due_date") is not None
+        and t.get("execution_status") not in ("COMPLETE", "SKIPPED")
+    ]
+    if not due_dates:
         return 0
-    return max((move_in - today).days, 0)
+    return max((max(due_dates) - today).days, 0)
 
 
 def is_open(turnover: dict) -> bool:
@@ -204,6 +219,7 @@ def nvm_state(turnover: dict, today: date | None = None) -> str:
 
 
 # ── Effective Date Resolution ────────────────────────────────────────────────
+
 
 def effective_move_out_date(turnover: dict):
     """Return the best available move-out date for a turnover.
