@@ -301,7 +301,17 @@ def test_search_unit():
 
 def test_get_turnover_detail():
     """get_turnover_detail returns enriched dict with lifecycle_phase."""
-    detail = get_turnover_detail(1)
+    fake_turnover = {
+        "turnover_id": 1,
+        "property_id": 1,
+        "unit_id": 1,
+        "move_out_date": date(2026, 4, 1),
+        "move_in_date": date(2026, 4, 15),
+        "closed_at": None,
+        "canceled_at": None,
+    }
+    with patch("db.repository.turnover_repository.get_by_id", return_value=fake_turnover):
+        detail = get_turnover_detail(1)
     assert detail is not None
     assert "lifecycle_phase" in detail
     assert "days_since_move_out" in detail

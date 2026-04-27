@@ -184,7 +184,7 @@ TODAY = date(2025, 6, 15)
 
 def _task(
     task_type: str = "CLEAN",
-    execution_status: str = "COMPLETED",
+    execution_status: str = "COMPLETE",
     required: bool = True,
     blocking: bool = True,
     **kw,
@@ -219,7 +219,7 @@ def test_evaluate_turnover_agreements_scenario_a_healthy():
         move_in_date=TODAY + timedelta(days=14),
         report_ready_date=TODAY + timedelta(days=7),
     )
-    tasks = [_task("CLEAN", "COMPLETED"), _task("INSPECT", "COMPLETED")]
+    tasks = [_task("CLEAN", "COMPLETE"), _task("INSPECT", "COMPLETE")]
     result = evaluate_turnover_agreements(turnover, tasks, TODAY)
     assert result["inspection"] == "GREEN"
     assert result["sla"] == "GREEN"
@@ -232,7 +232,7 @@ def test_evaluate_turnover_agreements_scenario_b_inspection_delay():
     """Scenario B — Inspection delay: inspection_flag RED (and SLA red when dv > 10)."""
     turnover = _turnover(move_out_date=TODAY - timedelta(days=49))
     tasks = [
-        _task("CLEAN", "COMPLETED"),
+        _task("CLEAN", "COMPLETE"),
         _task("INSPECT", "NOT_STARTED"),
     ]
     result = evaluate_turnover_agreements(turnover, tasks, TODAY)
@@ -302,7 +302,7 @@ def test_evaluate_turnover_agreements_multiple_red_flags():
         move_in_date=TODAY + timedelta(days=1),
         report_ready_date=TODAY - timedelta(days=5),
     )
-    tasks = [_task("CLEAN", "COMPLETED"), _task("INSPECT", "NOT_STARTED")]
+    tasks = [_task("CLEAN", "COMPLETE"), _task("INSPECT", "NOT_STARTED")]
     result = evaluate_turnover_agreements(turnover, tasks, TODAY)
     assert result["inspection"] == "RED"
     assert result["sla"] == "RED"
