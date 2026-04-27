@@ -36,19 +36,19 @@ ROBERT_PHASES: frozenset[str] = frozenset({"5", "7", "8"})
 # Output column definitions
 # ---------------------------------------------------------------------------
 _COLUMNS = [
-    ("ph",               "PH"),
-    ("bld",              "BLD"),
-    ("Days open",        "Days Open"),
-    ("Number",           "Number"),
-    ("Location",         "Location"),
-    ("Created date",     "Created Date"),
-    ("Due date",         "Due Date"),
+    ("ph", "PH"),
+    ("bld", "BLD"),
+    ("Days open", "Days Open"),
+    ("Number", "Number"),
+    ("Location", "Location"),
+    ("Created date", "Created Date"),
+    ("Due date", "Due Date"),
     ("Service Category", "Service Category"),
-    ("Issue",            "Issue"),
-    ("Assigned to",      "Assigned To"),
-    ("Priority",         "Priority"),
-    ("Status",           "Status"),
-    ("wo_classification","WO Classification"),
+    ("Issue", "Issue"),
+    ("Assigned to", "Assigned To"),
+    ("Priority", "Priority"),
+    ("Status", "Status"),
+    ("wo_classification", "WO Classification"),
 ]
 
 _FIELD_KEYS = [c[0] for c in _COLUMNS]
@@ -57,17 +57,18 @@ _HEADER_LABELS = [c[1] for c in _COLUMNS]
 # ---------------------------------------------------------------------------
 # Palette
 # ---------------------------------------------------------------------------
-_C_HEADER_BG    = "1F497D"   # dark navy — header row background
-_C_SECTION_IP   = "BDD7EE"   # light blue — IN PROGRESS section header
-_C_SECTION_OH   = "FCE4D6"   # light orange — ON HOLD section header
-_C_MR           = "C6EFCE"   # green — Make Ready
-_C_UNRESOLVED   = "D9D9D9"   # gray — Common Area
-_DATE_FMT       = "MM/DD/YY"
+_C_HEADER_BG = "1F497D"  # dark navy — header row background
+_C_SECTION_IP = "BDD7EE"  # light blue — IN PROGRESS section header
+_C_SECTION_OH = "FCE4D6"  # light orange — ON HOLD section header
+_C_MR = "C6EFCE"  # green — Make Ready
+_C_UNRESOLVED = "D9D9D9"  # gray — Common Area
+_DATE_FMT = "MM/DD/YY"
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _fill(hex_color: str) -> PatternFill:
     return PatternFill(start_color=hex_color, end_color=hex_color, fill_type="solid")
@@ -114,6 +115,7 @@ def _group_for_phase(phase: str) -> str:
 # ---------------------------------------------------------------------------
 # Sheet writers
 # ---------------------------------------------------------------------------
+
 
 def _write_header_row(ws, row_num: int, *, header_bg: str | None = None) -> None:
     """Write the column header row with styling."""
@@ -211,9 +213,10 @@ def _write_technician_sheet(ws, in_progress: list[dict], on_hold: list[dict]) ->
 # Safe sheet name helper
 # ---------------------------------------------------------------------------
 
+
 def _sheet_name(text: str, max_len: int = 31) -> str:
     """Excel sheet names: max 31 chars, no special chars."""
-    invalid = r'\/:*?[]'
+    invalid = r"\/:*?[]"
     clean = "".join(c for c in text if c not in invalid)
     return clean[:max_len]
 
@@ -221,6 +224,7 @@ def _sheet_name(text: str, max_len: int = 31) -> str:
 # ---------------------------------------------------------------------------
 # Main builder
 # ---------------------------------------------------------------------------
+
 
 def build_work_order_report(rows: list[dict]) -> bytes:
     """Build the multi-sheet WO Validator Excel workbook and return bytes."""
@@ -239,8 +243,8 @@ def build_work_order_report(rows: list[dict]) -> bytes:
 
     # Partition by manager group
     robert_rows = [r for r in rows_sorted if _group_for_phase(r.get("ph", "")) == "Robert"]
-    mabi_rows   = [r for r in rows_sorted if _group_for_phase(r.get("ph", "")) == "Mabi"]
-    other_rows  = [r for r in rows_sorted if _group_for_phase(r.get("ph", "")) == "Other"]
+    mabi_rows = [r for r in rows_sorted if _group_for_phase(r.get("ph", "")) == "Mabi"]
+    other_rows = [r for r in rows_sorted if _group_for_phase(r.get("ph", "")) == "Other"]
 
     def _is_unassigned(r: dict) -> bool:
         val = str(r.get("Assigned to") or "").strip()
@@ -261,15 +265,17 @@ def build_work_order_report(rows: list[dict]) -> bytes:
         _write_flat_sheet(ws_un, unassigned)
 
         # Per-assignee sheets (alphabetically sorted, excluding "Unassigned"/empty)
-        assignees = sorted({
-            str(r.get("Assigned to") or "").strip()
-            for r in group_rows
-            if not _is_unassigned(r)
-        })
+        assignees = sorted(
+            {str(r.get("Assigned to") or "").strip() for r in group_rows if not _is_unassigned(r)}
+        )
         for assignee in assignees:
-            tech_rows = [r for r in group_rows if str(r.get("Assigned to") or "").strip() == assignee]
-            in_progress = [r for r in tech_rows if str(r.get("Status") or "").strip() == "In progress"]
-            on_hold     = [r for r in tech_rows if str(r.get("Status") or "").strip() == "On hold"]
+            tech_rows = [
+                r for r in group_rows if str(r.get("Assigned to") or "").strip() == assignee
+            ]
+            in_progress = [
+                r for r in tech_rows if str(r.get("Status") or "").strip() == "In progress"
+            ]
+            on_hold = [r for r in tech_rows if str(r.get("Status") or "").strip() == "On hold"]
             ws = wb.create_sheet(_sheet_name(f"{manager} – {assignee}"))
             _write_technician_sheet(ws, in_progress, on_hold)
 

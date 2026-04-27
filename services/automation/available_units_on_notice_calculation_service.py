@@ -21,8 +21,6 @@ from __future__ import annotations
 import logging
 from datetime import date
 
-from domain.availability_status import status_is_on_notice
-from domain.unit_identity import normalize_unit_code
 from db.repository import (
     audit_repository,
     import_repository,
@@ -30,6 +28,8 @@ from db.repository import (
     unit_on_notice_snapshot_repository,
     unit_repository,
 )
+from domain.availability_status import status_is_on_notice
+from domain.unit_identity import normalize_unit_code
 from services import turnover_service
 from services.imports.common import parse_date
 from services.write_guard import check_writes_enabled
@@ -81,10 +81,7 @@ def process_on_notice_from_latest_import(
 
     batches = import_repository.get_batches_by_property(property_id, limit=200)
     for batch in batches:
-        if (
-            batch.get("report_type") == "AVAILABLE_UNITS"
-            and batch.get("status") == "COMPLETED"
-        ):
+        if batch.get("report_type") == "AVAILABLE_UNITS" and batch.get("status") == "COMPLETED":
             rows = import_repository.get_rows_by_batch(batch["batch_id"])
             return _process_on_notice_rows(property_id, rows, today)
 

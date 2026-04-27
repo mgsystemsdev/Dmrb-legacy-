@@ -1,11 +1,14 @@
 from __future__ import annotations
+
 import logging
 from pathlib import Path
-from fastapi import FastAPI, Response, HTTPException
+
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from api.middleware.request_id import RequestIDMiddleware
+
 from api.middleware.auth import AuthMiddleware
+from api.middleware.request_id import RequestIDMiddleware
 from api.routers import (
     auth,
     board,
@@ -83,7 +86,9 @@ app.include_router(unit_master.router, prefix="/api")
 
 frontend_dist = Path("frontend/dist")
 if not frontend_dist.exists():
-    raise RuntimeError("Missing React build at frontend/dist. Run the frontend build before starting FastAPI.")
+    raise RuntimeError(
+        "Missing React build at frontend/dist. Run the frontend build before starting FastAPI."
+    )
 
 FRONTEND_INDEX = frontend_dist / "index.html"
 ASSETS_DIR = frontend_dist / "assets"
@@ -134,7 +139,9 @@ async def api_logout(response: Response):
 
 if __name__ == "__main__":
     import os
+
     import uvicorn
+
     uvicorn.run(
         "api.main:app",
         host="0.0.0.0",

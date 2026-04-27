@@ -189,6 +189,7 @@ def _score_board_item(item: dict, phase_map: dict[int, str]) -> dict:
 
 # ── Internal Helpers ─────────────────────────────────────────────────────────
 
+
 def _ensure_risk_flag(turnover: dict, risk_type: str, severity: str) -> None:
     risk_repository.upsert_open(
         turnover["property_id"],

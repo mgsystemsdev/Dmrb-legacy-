@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import logging
 
-from db.repository import import_repository, turnover_repository, audit_repository
+from db.repository import audit_repository, import_repository, turnover_repository
 from services.write_guard import check_writes_enabled
 
 logger = logging.getLogger(__name__)
@@ -47,17 +47,19 @@ def list_override_conflicts(property_id: int) -> list[dict]:
             raw = turnover.get(turnover_col)
             manual_value = str(raw) if raw is not None else None
 
-        enriched.append({
-            "row_id": r["row_id"],
-            "turnover_id": r["turnover_id"],
-            "unit": r["unit_code_norm"],
-            "batch_id": r["batch_id"],
-            "report_type": r["report_type"],
-            "detected_at": r["detected_at"],
-            "conflict_field": field,
-            "manual_value": manual_value,
-            "report_value": r["report_value"],
-        })
+        enriched.append(
+            {
+                "row_id": r["row_id"],
+                "turnover_id": r["turnover_id"],
+                "unit": r["unit_code_norm"],
+                "batch_id": r["batch_id"],
+                "report_type": r["report_type"],
+                "detected_at": r["detected_at"],
+                "conflict_field": field,
+                "manual_value": manual_value,
+                "report_value": r["report_value"],
+            }
+        )
 
     return enriched
 

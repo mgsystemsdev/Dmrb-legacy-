@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 import tomllib
+from pathlib import Path
 from typing import Any
 
 
@@ -63,10 +63,11 @@ def allow_dev_reset_admin_endpoint() -> bool:
         return False
     return APP_ENV in ("development", "dev", "local")
 
+
 if IS_PRODUCTION and SECRET_KEY == _DEFAULT_SECRET_KEY:
     raise RuntimeError(
         "SECRET_KEY must be set to a strong value in production. "
-        "Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(64))\""
+        'Generate one with: python -c "import secrets; print(secrets.token_urlsafe(64))"'
     )
 
 # API auth uses public.app_user only. Kept for Streamlit / legacy: "env" = APP_*, "db" = app_user.

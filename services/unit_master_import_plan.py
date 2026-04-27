@@ -224,9 +224,7 @@ def build_unit_master_import_report(
         if existing:
             action_dicts.append({"type": "would_skip_existing_unit", "unit_code": norm})
             n_valid += 1
-            rows_out.append(
-                _finalize_row(row_index, norm, "valid", [], action_dicts)
-            )
+            rows_out.append(_finalize_row(row_index, norm, "valid", [], action_dicts))
             continue
 
         if strict:
@@ -291,11 +289,7 @@ def build_unit_master_import_report(
                 resolved_phase_code
                 if resolved_phase_code is not None
                 else next(
-                    (
-                        c
-                        for c, pr in phase_cache.items()
-                        if int(pr["phase_id"]) == int(phase_id)
-                    ),
+                    (c for c, pr in phase_cache.items() if int(pr["phase_id"]) == int(phase_id)),
                     str(phase_id),
                 )
             )
@@ -335,9 +329,7 @@ def build_unit_master_import_report(
         else:
             n_valid += 1
 
-        rows_out.append(
-            _finalize_row(row_index, norm, status, type_warnings, action_dicts)
-        )
+        rows_out.append(_finalize_row(row_index, norm, status, type_warnings, action_dicts))
 
     report = {
         "total_rows": len(rows_out),

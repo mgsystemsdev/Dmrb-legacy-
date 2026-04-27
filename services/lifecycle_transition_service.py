@@ -6,12 +6,12 @@ import logging
 from datetime import date, datetime
 
 from db.repository import lifecycle_event_repository, turnover_repository
+from domain import turnover_lifecycle
 from domain.availability_status import (
     MANUAL_READY_ON_NOTICE,
     MANUAL_READY_VACANT_NOT_READY,
     MANUAL_READY_VACANT_READY,
 )
-from domain import turnover_lifecycle
 from services.turnover_service import TurnoverError, update_turnover
 from services.write_guard import check_writes_enabled
 
@@ -47,9 +47,7 @@ def transition_turnover_phase(
     if existing is None:
         raise TurnoverError(f"Turnover {turnover_id} not found.")
     if int(existing["property_id"]) != int(property_id):
-        raise TurnoverError(
-            f"Turnover {turnover_id} does not belong to property {property_id}."
-        )
+        raise TurnoverError(f"Turnover {turnover_id} does not belong to property {property_id}.")
 
     from_phase = turnover_lifecycle.lifecycle_phase(existing, today)
     if from_phase == to_phase:
@@ -136,7 +134,10 @@ def _apply_transition(
             cancel_reason=str(cancel_reason).strip(),
         )
 
-    if from_phase == turnover_lifecycle.PHASE_PRE_NOTICE and to_phase == turnover_lifecycle.PHASE_ON_NOTICE:
+    if (
+        from_phase == turnover_lifecycle.PHASE_PRE_NOTICE
+        and to_phase == turnover_lifecycle.PHASE_ON_NOTICE
+    ):
         return update_turnover(
             tid,
             actor=actor,
@@ -145,7 +146,10 @@ def _apply_transition(
             availability_status="on notice",
         )
 
-    if from_phase == turnover_lifecycle.PHASE_ON_NOTICE and to_phase == turnover_lifecycle.PHASE_VACANT_NOT_READY:
+    if (
+        from_phase == turnover_lifecycle.PHASE_ON_NOTICE
+        and to_phase == turnover_lifecycle.PHASE_VACANT_NOT_READY
+    ):
         fields: dict = {
             "manual_ready_status": MANUAL_READY_VACANT_NOT_READY,
             "availability_status": "vacant not ready",
@@ -155,7 +159,10 @@ def _apply_transition(
             fields["move_out_date"] = today
         return update_turnover(tid, actor=actor, source=source, **fields)
 
-    if from_phase == turnover_lifecycle.PHASE_VACANT_NOT_READY and to_phase == turnover_lifecycle.PHASE_VACANT_READY:
+    if (
+        from_phase == turnover_lifecycle.PHASE_VACANT_NOT_READY
+        and to_phase == turnover_lifecycle.PHASE_VACANT_READY
+    ):
         return update_turnover(
             tid,
             actor=actor,
@@ -165,7 +172,10 @@ def _apply_transition(
             availability_status="vacant ready",
         )
 
-    if from_phase == turnover_lifecycle.PHASE_VACANT_READY and to_phase == turnover_lifecycle.PHASE_VACANT_NOT_READY:
+    if (
+        from_phase == turnover_lifecycle.PHASE_VACANT_READY
+        and to_phase == turnover_lifecycle.PHASE_VACANT_NOT_READY
+    ):
         return update_turnover(
             tid,
             actor=actor,
@@ -175,7 +185,10 @@ def _apply_transition(
             availability_status="vacant not ready",
         )
 
-    if from_phase == turnover_lifecycle.PHASE_VACANT_READY and to_phase == turnover_lifecycle.PHASE_OCCUPIED:
+    if (
+        from_phase == turnover_lifecycle.PHASE_VACANT_READY
+        and to_phase == turnover_lifecycle.PHASE_OCCUPIED
+    ):
         mid = move_in_date or today
         if mid > today:
             raise TurnoverError(
@@ -188,6 +201,4 @@ def _apply_transition(
             move_in_date=mid,
         )
 
-    raise TurnoverError(
-        f"No handler for transition {from_phase!r} → {to_phase!r} (unexpected)."
-    )
+    raise TurnoverError(f"No handler for transition {from_phase!r} → {to_phase!r} (unexpected).")

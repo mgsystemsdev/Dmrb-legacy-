@@ -7,9 +7,9 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
-from domain.unit_identity import normalize_unit_code, parse_unit_parts, compose_identity_key
-from domain import import_outcomes
 from db.repository import unit_repository
+from domain import import_outcomes
+from domain.unit_identity import compose_identity_key, normalize_unit_code, parse_unit_parts
 from services import import_service, property_service
 
 
@@ -120,7 +120,9 @@ def resolve_or_create_unit(
             building = property_service.get_building_by_code(phase_id, parts["building_code"])
             if building is None:
                 building = property_service.create_building(
-                    property_id, phase_id, parts["building_code"],
+                    property_id,
+                    phase_id,
+                    parts["building_code"],
                 )
             building_id = building["building_id"]
 

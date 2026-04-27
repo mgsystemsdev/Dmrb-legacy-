@@ -26,8 +26,14 @@ def insert(
             RETURNING *
             """,
             (
-                property_id, entity_type, entity_id, field_name,
-                old_value, new_value, actor, source,
+                property_id,
+                entity_type,
+                entity_id,
+                field_name,
+                old_value,
+                new_value,
+                actor,
+                source,
             ),
         )
         return cur.fetchone()

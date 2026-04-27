@@ -17,18 +17,16 @@ from __future__ import annotations
 from datetime import date
 
 from domain.readiness import BLOCKED, NOT_STARTED, READY, readiness_state
-from domain.sla import SLA_BREACH, SLA_WARNING, sla_risk, DEFAULT_SLA_THRESHOLD_DAYS
+from domain.sla import DEFAULT_SLA_THRESHOLD_DAYS, SLA_BREACH, SLA_WARNING, sla_risk
 from domain.turnover_lifecycle import (
-    lifecycle_phase,
-    PHASE_PRE_NOTICE,
-    PHASE_ON_NOTICE,
-    PHASE_VACANT_NOT_READY,
-    PHASE_VACANT_READY,
-    PHASE_CLOSED,
     PHASE_CANCELED,
+    PHASE_CLOSED,
+    PHASE_ON_NOTICE,
+    PHASE_PRE_NOTICE,
+    PHASE_VACANT_READY,
     days_to_move_in,
+    lifecycle_phase,
 )
-
 
 # ── Priority Levels ─────────────────────────────────────────────────────────
 
@@ -91,6 +89,7 @@ def urgency_sort_key(
     dv = turnover.get("days_since_move_out")
     if dv is None:
         from domain.turnover_lifecycle import days_since_move_out
+
         dv = days_since_move_out(turnover, today) or 0
     return (1, -dv)
 
@@ -176,11 +175,13 @@ def evaluate_board(
     for turnover, tasks in turnovers_with_tasks:
         level = priority_level(turnover, tasks, today, sla_threshold)
         key = priority_sort_key(turnover, tasks, today, sla_threshold)
-        results.append({
-            "turnover": turnover,
-            "tasks": tasks,
-            "priority": level,
-            "rank": key,
-        })
+        results.append(
+            {
+                "turnover": turnover,
+                "tasks": tasks,
+                "priority": level,
+                "rank": key,
+            }
+        )
     results.sort(key=lambda r: r["rank"])
     return results

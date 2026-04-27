@@ -112,6 +112,7 @@ def bootstrap_create_first_admin(username: str, password: str) -> dict:
 
 def _authenticate_db(username: str, password: str) -> dict | None:
     import logging
+
     logger = logging.getLogger(__name__)
     row = user_repository.get_active_by_username(username)
     if row is None:

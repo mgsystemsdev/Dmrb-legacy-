@@ -1,4 +1,5 @@
 """Import orchestrator rebuild-order preflight (PENDING_MOVE_INS)."""
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
@@ -11,10 +12,7 @@ from services.imports import orchestrator
 
 def _minimal_pending_move_ins_csv(path) -> None:
     """CSV that passes schema (5 skip rows, then header + one row)."""
-    lines = (
-        ["skip"] * 5
-        + ["Unit,Move In Date", "1A-101,01/15/2025"]
-    )
+    lines = ["skip"] * 5 + ["Unit,Move In Date", "1A-101,01/15/2025"]
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
@@ -67,20 +65,25 @@ def test_preflight_warning_prepended_on_success_when_no_open_turnovers(
     tx_cm.__exit__ = MagicMock(return_value=False)
 
     with patch("services.imports.orchestrator.transaction", return_value=tx_cm):
-        with patch.object(
-            orchestrator.import_service,
-            "start_batch",
-            return_value={"batch_id": 99},
-        ), patch.object(
-            orchestrator.import_service,
-            "mark_processing",
-        ), patch.object(
-            orchestrator.import_service,
-            "complete_batch",
-        ), patch.object(
-            orchestrator.move_ins_service,
-            "apply",
-            return_value={"applied": 0, "conflict": 1, "invalid": 0},
+        with (
+            patch.object(
+                orchestrator.import_service,
+                "start_batch",
+                return_value={"batch_id": 99},
+            ),
+            patch.object(
+                orchestrator.import_service,
+                "mark_processing",
+            ),
+            patch.object(
+                orchestrator.import_service,
+                "complete_batch",
+            ),
+            patch.object(
+                orchestrator.move_ins_service,
+                "apply",
+                return_value={"applied": 0, "conflict": 1, "invalid": 0},
+            ),
         ):
             result = orchestrator.import_report_file(
                 "PENDING_MOVE_INS",
@@ -106,20 +109,25 @@ def test_no_preflight_when_open_turnovers_exist(pending_move_ins_file, monkeypat
     tx_cm.__exit__ = MagicMock(return_value=False)
 
     with patch("services.imports.orchestrator.transaction", return_value=tx_cm):
-        with patch.object(
-            orchestrator.import_service,
-            "start_batch",
-            return_value={"batch_id": 100},
-        ), patch.object(
-            orchestrator.import_service,
-            "mark_processing",
-        ), patch.object(
-            orchestrator.import_service,
-            "complete_batch",
-        ), patch.object(
-            orchestrator.move_ins_service,
-            "apply",
-            return_value={"applied": 1, "conflict": 0, "invalid": 0},
+        with (
+            patch.object(
+                orchestrator.import_service,
+                "start_batch",
+                return_value={"batch_id": 100},
+            ),
+            patch.object(
+                orchestrator.import_service,
+                "mark_processing",
+            ),
+            patch.object(
+                orchestrator.import_service,
+                "complete_batch",
+            ),
+            patch.object(
+                orchestrator.move_ins_service,
+                "apply",
+                return_value={"applied": 1, "conflict": 0, "invalid": 0},
+            ),
         ):
             result = orchestrator.import_report_file(
                 "PENDING_MOVE_INS",

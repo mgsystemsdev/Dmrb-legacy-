@@ -1,25 +1,26 @@
 """Integration tests: default task templates on phase creation (007 parity)."""
+
 from __future__ import annotations
 
 import uuid
 from datetime import date
 
-
 from db.repository import task_repository
 from services import property_service, task_service, turnover_service
 
-
-_EXPECTED_TYPES = frozenset({
-    "INSPECT",
-    "CARPET_BID",
-    "MAKE_READY_BID",
-    "PAINT",
-    "MAKE_READY",
-    "HOUSEKEEPING",
-    "CARPET_CLEAN",
-    "FINAL_WALK",
-    "QUALITY_CONTROL",
-})
+_EXPECTED_TYPES = frozenset(
+    {
+        "INSPECT",
+        "CARPET_BID",
+        "MAKE_READY_BID",
+        "PAINT",
+        "MAKE_READY",
+        "HOUSEKEEPING",
+        "CARPET_CLEAN",
+        "FINAL_WALK",
+        "QUALITY_CONTROL",
+    }
+)
 
 
 def test_create_phase_seeds_default_templates():

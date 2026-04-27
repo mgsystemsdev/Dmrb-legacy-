@@ -102,17 +102,31 @@ def insert(
         return cur.fetchone()
 
 
-_TURNOVER_UPDATABLE = frozenset({
-    "move_out_date", "move_in_date", "report_ready_date", "available_date",
-    "availability_status", "scheduled_move_out_date", "confirmed_move_out_date",
-    "legal_confirmation_source", "legal_confirmed_at",
-    "manual_ready_status", "manual_ready_confirmed_at",
-    "closed_at", "canceled_at", "cancel_reason",
-    "missing_moveout_count", "move_out_manual_override_at",
-    "move_in_manual_override_at",
-    "ready_manual_override_at", "status_manual_override_at",
-    "wd_notified_at", "wd_installed_at",
-})
+_TURNOVER_UPDATABLE = frozenset(
+    {
+        "move_out_date",
+        "move_in_date",
+        "report_ready_date",
+        "available_date",
+        "availability_status",
+        "scheduled_move_out_date",
+        "confirmed_move_out_date",
+        "legal_confirmation_source",
+        "legal_confirmed_at",
+        "manual_ready_status",
+        "manual_ready_confirmed_at",
+        "closed_at",
+        "canceled_at",
+        "cancel_reason",
+        "missing_moveout_count",
+        "move_out_manual_override_at",
+        "move_in_manual_override_at",
+        "ready_manual_override_at",
+        "status_manual_override_at",
+        "wd_notified_at",
+        "wd_installed_at",
+    }
+)
 
 
 def update(turnover_id: int, **fields) -> dict | None:

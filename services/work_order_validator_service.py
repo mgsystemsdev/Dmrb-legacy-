@@ -27,16 +27,15 @@ import pandas as pd
 
 from db.repository import unit_repository
 from domain.unit_identity import normalize_unit_code, parse_unit_parts
-from services import occupancy_service
-from services import work_order_excel
+from services import occupancy_service, work_order_excel
 
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Classification thresholds
 # ---------------------------------------------------------------------------
-MAKE_READY_MIN_DAYS = -7   # pre-move-in prep window
-MAKE_READY_MAX_DAYS = 15   # post-move-in grace window
+MAKE_READY_MIN_DAYS = -7  # pre-move-in prep window
+MAKE_READY_MAX_DAYS = 15  # post-move-in grace window
 
 # ---------------------------------------------------------------------------
 # Phase → manager group mapping
@@ -126,17 +125,13 @@ def validate(property_id: int, sr_file_content: bytes) -> list[dict]:
 
     # Parse created date
     if "Created date" in df.columns:
-        df["Created date"] = pd.to_datetime(
-            df["Created date"], format="%m/%d/%Y", errors="coerce"
-        )
+        df["Created date"] = pd.to_datetime(df["Created date"], format="%m/%d/%Y", errors="coerce")
 
     # --- Load lookup data (single DB hit each) ---
     occupancy: dict[int, date | None] = occupancy_service.get_all_occupancy(property_id)
 
     unit_rows = unit_repository.get_by_property(property_id, active_only=False)
-    unit_lookup: dict[str, int] = {
-        row["unit_code_norm"]: row["unit_id"] for row in unit_rows
-    }
+    unit_lookup: dict[str, int] = {row["unit_code_norm"]: row["unit_id"] for row in unit_rows}
 
     # --- Classify each row ---
     results: list[dict] = []
@@ -184,8 +179,7 @@ def validate(property_id: int, sr_file_content: bytes) -> list[dict]:
         results.append(rec)
 
     logger.info(
-        "work_order_validator_service.validate: property=%d total=%d "
-        "make_ready=%d service_tech=%d",
+        "work_order_validator_service.validate: property=%d total=%d make_ready=%d service_tech=%d",
         property_id,
         len(results),
         sum(1 for r in results if r["wo_classification"] == "Make Ready"),

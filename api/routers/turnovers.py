@@ -1,17 +1,20 @@
 from __future__ import annotations
+
 from datetime import date, datetime
 from typing import Any, Optional
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+
 from api.deps import get_current_user
-from services import turnover_service, audit_service, risk_service, unit_service
-from services.turnover_service import TurnoverError
+from api.presentation.formatting import status_label
 from domain.availability_status import (
     MANUAL_READY_ON_NOTICE,
     MANUAL_READY_VACANT_NOT_READY,
     MANUAL_READY_VACANT_READY,
 )
-from api.presentation.formatting import status_label
+from services import audit_service, risk_service, turnover_service, unit_service
+from services.turnover_service import TurnoverError
 
 router = APIRouter()
 
@@ -161,10 +164,16 @@ async def patch_turnover(
     user: dict = Depends(get_current_user),
 ):
     allowed_fields = {
-        "move_out_date", "move_in_date", "report_ready_date",
-        "availability_status", "manual_ready_status",
-        "legal_hold", "notes_to_self",
-        "wd_present", "wd_notified_at", "wd_installed_at",
+        "move_out_date",
+        "move_in_date",
+        "report_ready_date",
+        "availability_status",
+        "manual_ready_status",
+        "legal_hold",
+        "notes_to_self",
+        "wd_present",
+        "wd_notified_at",
+        "wd_installed_at",
         "status",
     }
     if body.field not in allowed_fields:
@@ -212,7 +221,9 @@ async def get_turnover_audit(turnover_id: int, user: dict = Depends(get_current_
 @router.post("/turnovers/{turnover_id}/wd/notify")
 async def wd_notify(turnover_id: int, user: dict = Depends(get_current_user)):
     try:
-        return _serialize(turnover_service.mark_wd_notified(turnover_id, actor=user.get("username", "api")))
+        return _serialize(
+            turnover_service.mark_wd_notified(turnover_id, actor=user.get("username", "api"))
+        )
     except TurnoverError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
@@ -220,7 +231,9 @@ async def wd_notify(turnover_id: int, user: dict = Depends(get_current_user)):
 @router.post("/turnovers/{turnover_id}/wd/install")
 async def wd_install(turnover_id: int, user: dict = Depends(get_current_user)):
     try:
-        return _serialize(turnover_service.mark_wd_installed(turnover_id, actor=user.get("username", "api")))
+        return _serialize(
+            turnover_service.mark_wd_installed(turnover_id, actor=user.get("username", "api"))
+        )
     except TurnoverError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
@@ -228,7 +241,9 @@ async def wd_install(turnover_id: int, user: dict = Depends(get_current_user)):
 @router.delete("/turnovers/{turnover_id}/wd/notify")
 async def wd_undo_notify(turnover_id: int, user: dict = Depends(get_current_user)):
     try:
-        return _serialize(turnover_service.undo_wd_notified(turnover_id, actor=user.get("username", "api")))
+        return _serialize(
+            turnover_service.undo_wd_notified(turnover_id, actor=user.get("username", "api"))
+        )
     except TurnoverError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
@@ -236,6 +251,8 @@ async def wd_undo_notify(turnover_id: int, user: dict = Depends(get_current_user
 @router.delete("/turnovers/{turnover_id}/wd/install")
 async def wd_undo_install(turnover_id: int, user: dict = Depends(get_current_user)):
     try:
-        return _serialize(turnover_service.undo_wd_installed(turnover_id, actor=user.get("username", "api")))
+        return _serialize(
+            turnover_service.undo_wd_installed(turnover_id, actor=user.get("username", "api"))
+        )
     except TurnoverError as exc:
         raise HTTPException(status_code=400, detail=str(exc))

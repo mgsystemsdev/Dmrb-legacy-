@@ -6,8 +6,8 @@ from psycopg2.extras import RealDictCursor
 
 from db.connection import get_connection
 
-
 # ── Task Templates ───────────────────────────────────────────────────────────
+
 
 def get_templates_by_phase(phase_id: int, active_only: bool = True) -> list[dict]:
     with get_connection() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -50,8 +50,14 @@ def insert_template(
             RETURNING *
             """,
             (
-                property_id, phase_id, task_type, offset_days_from_move_out,
-                sort_order, required, blocking, skip_allowed,
+                property_id,
+                phase_id,
+                task_type,
+                offset_days_from_move_out,
+                sort_order,
+                required,
+                blocking,
+                skip_allowed,
             ),
         )
         return cur.fetchone()
@@ -152,6 +158,7 @@ def _get_template_by_id(template_id: int) -> dict | None:
 
 # ── Tasks ────────────────────────────────────────────────────────────────────
 
+
 def get_by_turnover(turnover_id: int) -> list[dict]:
     with get_connection() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(
@@ -202,8 +209,7 @@ def get_completed_on(
         """
         if phase_ids is not None:
             cur.execute(
-                base
-                + " AND u.phase_id = ANY(%s) ORDER BY u.unit_code_norm, t.task_type",
+                base + " AND u.phase_id = ANY(%s) ORDER BY u.unit_code_norm, t.task_type",
                 (property_id, completed_date, phase_ids),
             )
         else:
@@ -246,21 +252,35 @@ def insert(
             RETURNING *
             """,
             (
-                property_id, turnover_id, task_type,
-                scheduled_date, vendor_due_date,
-                required, blocking, skip_allowed, assignee,
+                property_id,
+                turnover_id,
+                task_type,
+                scheduled_date,
+                vendor_due_date,
+                required,
+                blocking,
+                skip_allowed,
+                assignee,
                 execution_status,
             ),
         )
         return cur.fetchone()
 
 
-_TASK_UPDATABLE = frozenset({
-    "scheduled_date", "vendor_due_date", "execution_status",
-    "vendor_completed_at", "completed_date",
-    "required", "blocking", "assignee",
-    "skip_allowed", "blocked_reason",
-})
+_TASK_UPDATABLE = frozenset(
+    {
+        "scheduled_date",
+        "vendor_due_date",
+        "execution_status",
+        "vendor_completed_at",
+        "completed_date",
+        "required",
+        "blocking",
+        "assignee",
+        "skip_allowed",
+        "blocked_reason",
+    }
+)
 
 
 def update(task_id: int, **fields) -> dict | None:

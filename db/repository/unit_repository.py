@@ -110,9 +110,16 @@ def insert(
             RETURNING *
             """,
             (
-                property_id, unit_code_raw, unit_code_norm, unit_identity_key,
-                phase_id, building_id, floor_plan, gross_sq_ft,
-                has_carpet, has_wd_expected,
+                property_id,
+                unit_code_raw,
+                unit_code_norm,
+                unit_identity_key,
+                phase_id,
+                building_id,
+                floor_plan,
+                gross_sq_ft,
+                has_carpet,
+                has_wd_expected,
             ),
         )
         return cur.fetchone()
@@ -139,9 +146,16 @@ def update(unit_id: int, **fields) -> dict | None:
     if not fields:
         return get_by_id(unit_id)
     allowed = {
-        "unit_code_raw", "unit_code_norm", "unit_identity_key",
-        "phase_id", "building_id", "floor_plan", "gross_sq_ft",
-        "has_carpet", "has_wd_expected", "is_active",
+        "unit_code_raw",
+        "unit_code_norm",
+        "unit_identity_key",
+        "phase_id",
+        "building_id",
+        "floor_plan",
+        "gross_sq_ft",
+        "has_carpet",
+        "has_wd_expected",
+        "is_active",
     }
     filtered = {k: v for k, v in fields.items() if k in allowed}
     if not filtered:

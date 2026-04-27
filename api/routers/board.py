@@ -1,18 +1,22 @@
 from __future__ import annotations
+
 from datetime import date
 from typing import Optional
+
 from fastapi import APIRouter, Depends, Query
-from api.schemas.board import BoardResponse, BoardRow, BoardTask
+
 from api.deps import get_current_user
-from services import board_service
 from api.presentation.formatting import (
     board_breach_row_display,
     display_status_for_board_item,
     nvm_label,
     qc_label,
 )
+from api.schemas.board import BoardResponse, BoardRow, BoardTask
+from services import board_service
 
 router = APIRouter()
+
 
 @router.get("/board/{property_id}", response_model=BoardResponse)
 async def get_property_board(
@@ -23,7 +27,7 @@ async def get_property_board(
     nvm: Optional[str] = Query(None),
     qc: Optional[str] = Query(None),
     board_filter: Optional[str] = Query(None),
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(get_current_user),
 ):
     today = date.today()
     uid = int(user["user_id"])
@@ -79,7 +83,9 @@ async def get_property_board(
             days_to_move_in=turnover.get("days_to_move_in"),
             days_to_be_ready=turnover.get("days_to_be_ready"),
             move_in_date=turnover.get("move_in_date"),
-            notes_summary=(item.get("notes", [{}])[0].get("text", "")[:60] if item.get("notes") else ""),
+            notes_summary=(
+                item.get("notes", [{}])[0].get("text", "")[:60] if item.get("notes") else ""
+            ),
             task_completion=(readiness_data["completed"], readiness_data["total"]),
             agreements=item["agreements"],
             tasks=tasks,
@@ -110,5 +116,5 @@ async def get_property_board(
         as_of=today,
         rows=rows,
         task_types_present=task_types_seen,
-        total=len(rows)
+        total=len(rows),
     )

@@ -3,6 +3,7 @@
 
 Read-only. Run from project root. Requires DATABASE_URL.
 """
+
 from __future__ import annotations
 
 import os
@@ -11,12 +12,13 @@ from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+
 def main():
+    from api.presentation.formatting import qc_label
     from db.repository import task_repository, turnover_repository
     from domain import readiness, sla, turnover_lifecycle
     from domain.priority_engine import derive_priority_from_agreements
     from services import board_service, scope_service
-    from api.presentation.formatting import qc_label
 
     property_id = 1
     today = date.today()
@@ -36,9 +38,7 @@ def main():
     tasks = task_repository.get_by_turnover(turnover_id)
 
     # Recompute priority via same pipeline as board: agreements first, then derive
-    agreements_recomputed = board_service.evaluate_turnover_agreements(
-        turnover, tasks, today
-    )
+    agreements_recomputed = board_service.evaluate_turnover_agreements(turnover, tasks, today)
     priority_recomputed = derive_priority_from_agreements(agreements_recomputed)
 
     recomputed = {
@@ -54,13 +54,29 @@ def main():
 
     mismatches = []
     if item["readiness"]["state"] != recomputed["readiness_state"]:
-        mismatches.append(("readiness.state", item["readiness"]["state"], recomputed["readiness_state"]))
+        mismatches.append(
+            ("readiness.state", item["readiness"]["state"], recomputed["readiness_state"])
+        )
     if item["turnover"].get("days_since_move_out") != recomputed["days_since_move_out"]:
-        mismatches.append(("days_since_move_out", item["turnover"].get("days_since_move_out"), recomputed["days_since_move_out"]))
+        mismatches.append(
+            (
+                "days_since_move_out",
+                item["turnover"].get("days_since_move_out"),
+                recomputed["days_since_move_out"],
+            )
+        )
     if item["turnover"].get("days_to_be_ready") != recomputed["days_to_be_ready"]:
-        mismatches.append(("days_to_be_ready", item["turnover"].get("days_to_be_ready"), recomputed["days_to_be_ready"]))
+        mismatches.append(
+            (
+                "days_to_be_ready",
+                item["turnover"].get("days_to_be_ready"),
+                recomputed["days_to_be_ready"],
+            )
+        )
     if item["sla"].get("risk_level") != recomputed["sla_risk_level"]:
-        mismatches.append(("sla.risk_level", item["sla"].get("risk_level"), recomputed["sla_risk_level"]))
+        mismatches.append(
+            ("sla.risk_level", item["sla"].get("risk_level"), recomputed["sla_risk_level"])
+        )
     if item["priority"] != recomputed["priority"]:
         mismatches.append(("priority", item["priority"], recomputed["priority"]))
 
@@ -71,6 +87,7 @@ def main():
         return 1
     print("DATA_CONSISTENCY: PASS")
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -8,14 +8,18 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 
-from services.unit_master_import_plan import build_unit_master_import_report, normalize_unit_master_report
+from services.unit_master_import_plan import (
+    build_unit_master_import_report,
+    normalize_unit_master_report,
+)
 
 
 @pytest.fixture
 def empty_structure():
-    with patch("services.unit_master_import_plan.property_repository") as pr, patch(
-        "services.unit_master_import_plan.unit_repository"
-    ) as ur:
+    with (
+        patch("services.unit_master_import_plan.property_repository") as pr,
+        patch("services.unit_master_import_plan.unit_repository") as ur,
+    ):
         pr.get_phases.return_value = []
         pr.get_buildings.return_value = []
         ur.get_by_code_norm.return_value = None
@@ -51,7 +55,7 @@ def test_strict_blocks_new_unit(empty_structure):
 def test_skips_existing_unit_no_gross_warning(empty_structure):
     """Same as import: existing rows are skipped before reading gross_sq_ft."""
     _pr, ur = empty_structure
-    ur.get_by_code_norm.side_effect = lambda _p, n: ({"unit_id": 1} if n == "A" else None)
+    ur.get_by_code_norm.side_effect = lambda _p, n: {"unit_id": 1} if n == "A" else None
     df = pd.DataFrame(
         {
             "unit_code": ["A"],
@@ -101,7 +105,13 @@ def test_normalize_derives_counts():
     raw = {
         "rows": [
             {"row_index": 0, "unit_code": "A", "status": "valid", "messages": [], "actions": []},
-            {"row_index": 1, "unit_code": "B", "status": "warning", "messages": ["w"], "actions": []},
+            {
+                "row_index": 1,
+                "unit_code": "B",
+                "status": "warning",
+                "messages": ["w"],
+                "actions": [],
+            },
         ],
         "file_messages": [],
     }

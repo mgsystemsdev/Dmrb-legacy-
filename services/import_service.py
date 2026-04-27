@@ -45,8 +45,7 @@ def start_batch(
     existing = import_repository.get_batch_by_checksum(property_id, checksum, report_type)
     if existing is not None and existing["status"] == "COMPLETED":
         raise ImportError(
-            f"File already imported (batch {existing['batch_id']}, "
-            f"status: {existing['status']})."
+            f"File already imported (batch {existing['batch_id']}, status: {existing['status']})."
         )
 
     batch = import_repository.insert_batch(
@@ -89,7 +88,9 @@ def record_row(
 def complete_batch(batch_id: int, record_count: int) -> dict:
     check_writes_enabled()
     return import_repository.update_batch_status(
-        batch_id, "COMPLETED", record_count=record_count,
+        batch_id,
+        "COMPLETED",
+        record_count=record_count,
     )
 
 
@@ -176,7 +177,8 @@ def get_missing_move_outs(property_id: int) -> list[dict]:
     """Return import rows with move-in but no move-out (PENDING_MOVE_INS conflicts)."""
     rows = import_repository.get_rows_by_property(property_id)
     return [
-        r for r in rows
+        r
+        for r in rows
         if r.get("report_type") == "PENDING_MOVE_INS"
         and r.get("conflict_flag")
         and r.get("move_out_date") is None
@@ -221,7 +223,9 @@ def run_import_pipeline(
 
     suffix = os.path.splitext(filename)[1] or ".csv"
     with tempfile.NamedTemporaryFile(
-        suffix=suffix, delete=False, mode="wb",
+        suffix=suffix,
+        delete=False,
+        mode="wb",
     ) as tmp:
         tmp.write(file_content)
         tmp_path = tmp.name
@@ -241,7 +245,8 @@ def run_import_pipeline(
 
 
 def get_latest_batch_rows(
-    property_id: int, report_type: str,
+    property_id: int,
+    report_type: str,
 ) -> list[dict]:
     """Return import_row records for the latest completed batch of a report type."""
     batches = import_repository.get_batches_by_property(property_id, limit=200)

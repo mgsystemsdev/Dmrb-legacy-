@@ -12,12 +12,12 @@ from pydantic import BaseModel, Field
 
 from api.deps import get_current_user
 from services import property_service, unit_service
-from services.unit_service import UnitMasterImportError
 from services.unit_master_import_plan import (
     build_unit_master_import_report,
     empty_unit_master_report,
     normalize_unit_master_report,
 )
+from services.unit_service import UnitMasterImportError
 from services.write_guard import WritesDisabledError, check_writes_enabled
 
 logger = logging.getLogger(__name__)
@@ -137,7 +137,9 @@ def _fail(
     return JSONResponse(status_code=status_code, content=body)
 
 
-def _prepare_dataframe_for_unit_import(df: pd.DataFrame) -> tuple[pd.DataFrame | None, JSONResponse | None]:
+def _prepare_dataframe_for_unit_import(
+    df: pd.DataFrame,
+) -> tuple[pd.DataFrame | None, JSONResponse | None]:
     """Normalize a unit column alias to ``unit_code`` (legacy-compatible), then validate."""
     found_columns = _list_column_names(df)
     prepared = _normalize_unit_code_column_name_for_import(df)
@@ -171,9 +173,7 @@ def _ok(data: Any = None, errors: list[str] | None = None) -> dict[str, Any]:
     ).model_dump()
 
 
-def _unit_master_report_envelope(
-    *, dry_run: bool, report: dict[str, Any]
-) -> dict[str, Any]:
+def _unit_master_report_envelope(*, dry_run: bool, report: dict[str, Any]) -> dict[str, Any]:
     """Single contract for 200 dry-run and 422 gate responses (row-level + top-level)."""
     return {
         "dry_run": dry_run,
@@ -356,7 +356,9 @@ async def create_unit_manual(
         return _fail(409, [f"Unit with code '{norm}' already exists for this property"])
 
     resolved_phase, place_err = _validate_create_placement(
-        property_id, body.phase_id, body.building_id,
+        property_id,
+        body.phase_id,
+        body.building_id,
     )
     if place_err is not None:
         return place_err

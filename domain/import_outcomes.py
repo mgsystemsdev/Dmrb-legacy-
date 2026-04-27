@@ -8,7 +8,6 @@ what happened during processing.
 
 from __future__ import annotations
 
-
 # ── Row Outcome Statuses ─────────────────────────────────────────────────────
 
 OK = "OK"

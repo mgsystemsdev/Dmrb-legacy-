@@ -11,11 +11,11 @@ from __future__ import annotations
 
 import logging
 
+from db.repository import audit_repository, turnover_repository
 from domain import import_outcomes
 from domain.manual_override import should_apply_import_value
 from domain.move_out_absence import should_cancel_turnover
 from domain.unit_identity import normalize_unit_code
-from db.repository import turnover_repository, audit_repository
 from services import turnover_service
 from services.imports import common
 
@@ -65,12 +65,18 @@ def apply(
         if turnover is None:
             # ── 4. No open turnover → create one ─────────────────────────
             status, reason = _handle_create_turnover(
-                property_id, unit_id, move_out, batch_id,
+                property_id,
+                unit_id,
+                move_out,
+                batch_id,
             )
         else:
             # ── 5. Open turnover → apply override rule & update ──────────
             status, reason = _handle_update_turnover(
-                turnover, move_out, property_id, batch_id,
+                turnover,
+                move_out,
+                property_id,
+                batch_id,
             )
 
         common.write_import_row(
@@ -102,6 +108,7 @@ def apply(
 
 
 # ── Internal helpers ─────────────────────────────────────────────────────────
+
 
 def _resolve_or_create_unit(
     property_id: int,
@@ -157,7 +164,9 @@ def _handle_update_turnover(
     override_at = turnover.get("move_out_manual_override_at")
 
     apply_val, clear_override = should_apply_import_value(
-        current_scheduled, override_at, incoming_move_out,
+        current_scheduled,
+        override_at,
+        incoming_move_out,
     )
 
     if not apply_val:
@@ -192,7 +201,9 @@ def _handle_update_turnover(
 
     if updates:
         turnover_service.update_turnover(
-            turnover_id, actor="import", **updates,
+            turnover_id,
+            actor="import",
+            **updates,
         )
 
     return (import_outcomes.OK, None)

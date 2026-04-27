@@ -6,7 +6,6 @@ blocked, or in progress.  Pure functions only.
 
 from __future__ import annotations
 
-
 # ── Readiness States ─────────────────────────────────────────────────────────
 
 READY = "READY"
@@ -41,8 +40,7 @@ def readiness_state(tasks: list[dict]) -> str:
         return READY
 
     any_started = any(
-        t["execution_status"] in ("IN_PROGRESS", "COMPLETE", "SKIPPED", "BLOCKED")
-        for t in blocking
+        t["execution_status"] in ("IN_PROGRESS", "COMPLETE", "SKIPPED", "BLOCKED") for t in blocking
     )
     if any_started:
         has_block = any(
@@ -58,10 +56,9 @@ def readiness_state(tasks: list[dict]) -> str:
 def blocking_tasks(tasks: list[dict]) -> list[dict]:
     """Return the subset of tasks that are required, blocking, and incomplete."""
     return [
-        t for t in tasks
-        if t.get("required")
-        and t.get("blocking")
-        and not is_done(t["execution_status"])
+        t
+        for t in tasks
+        if t.get("required") and t.get("blocking") and not is_done(t["execution_status"])
     ]
 
 

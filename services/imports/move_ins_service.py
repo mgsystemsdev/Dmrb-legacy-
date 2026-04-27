@@ -13,10 +13,10 @@ from __future__ import annotations
 
 import logging
 
+from db.repository import audit_repository, turnover_repository
 from domain import import_outcomes
 from domain.manual_override import should_apply_import_value
 from domain.unit_identity import normalize_unit_code
-from db.repository import turnover_repository, audit_repository
 from services import turnover_service
 from services.imports import common
 
@@ -79,7 +79,9 @@ def apply(
 
         # ── 4. Open turnover exists — apply override rule & update ───────
         status, reason = _handle_update_move_in(
-            turnover, move_in, property_id,
+            turnover,
+            move_in,
+            property_id,
         )
 
         common.write_import_row(
@@ -105,6 +107,7 @@ def apply(
 
 # ── Internal helpers ─────────────────────────────────────────────────────────
 
+
 def _resolve_or_create_unit(
     property_id: int,
     unit_raw: str,
@@ -127,7 +130,9 @@ def _handle_update_move_in(
     override_at = turnover.get("move_in_manual_override_at")
 
     apply_val, clear_override = should_apply_import_value(
-        current_move_in, override_at, incoming_move_in,
+        current_move_in,
+        override_at,
+        incoming_move_in,
     )
 
     if not apply_val:
@@ -156,7 +161,9 @@ def _handle_update_move_in(
 
     if updates:
         turnover_service.update_turnover(
-            turnover_id, actor="import", **updates,
+            turnover_id,
+            actor="import",
+            **updates,
         )
 
     return (import_outcomes.OK, None)

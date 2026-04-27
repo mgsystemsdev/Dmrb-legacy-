@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-import json
-
-from psycopg2.extras import RealDictCursor, Json
+from psycopg2.extras import Json, RealDictCursor
 
 from db.connection import get_connection
 
-
 # ── Batches ──────────────────────────────────────────────────────────────────
+
 
 def get_batches_by_property(property_id: int, limit: int = 50) -> list[dict]:
     with get_connection() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -94,6 +92,7 @@ def update_batch_status(batch_id: int, status: str, record_count: int | None = N
 
 # ── Diagnostics ──────────────────────────────────────────────────────────────
 
+
 def get_import_batches(property_id: int, limit: int = 50) -> list[dict]:
     """Return recent batches with per-status row counts for diagnostics."""
     with get_connection() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -150,6 +149,7 @@ def get_import_rows(batch_id: int) -> list[dict]:
 
 # ── Rows ─────────────────────────────────────────────────────────────────────
 
+
 def get_rows_by_batch(batch_id: int) -> list[dict]:
     with get_connection() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(
@@ -185,10 +185,16 @@ def insert_row(
             RETURNING *
             """,
             (
-                property_id, batch_id, validation_status, Json(raw_json),
-                unit_code_raw, unit_code_norm,
-                move_out_date, move_in_date,
-                conflict_flag, conflict_reason,
+                property_id,
+                batch_id,
+                validation_status,
+                Json(raw_json),
+                unit_code_raw,
+                unit_code_norm,
+                move_out_date,
+                move_in_date,
+                conflict_flag,
+                conflict_reason,
             ),
         )
         return cur.fetchone()

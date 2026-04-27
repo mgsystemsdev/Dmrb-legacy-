@@ -9,9 +9,8 @@ the import row resolved.
 from __future__ import annotations
 
 import logging
-from datetime import date
 
-from db.repository import import_repository, audit_repository
+from db.repository import audit_repository, import_repository
 from services import turnover_service
 from services.write_guard import check_writes_enabled
 
@@ -37,17 +36,19 @@ def list_invalid_rows(property_id: int) -> list[dict]:
     enriched: list[dict] = []
     for r in raw:
         reason = r.get("conflict_reason") or _default_reason(r.get("report_type"))
-        enriched.append({
-            "row_id": r["row_id"],
-            "unit": r.get("unit") or "—",
-            "batch_id": r["batch_id"],
-            "report_type": r["report_type"],
-            "reason": reason,
-            "move_out_date": r.get("move_out_date"),
-            "move_in_date": r.get("move_in_date"),
-            "raw_json": r.get("raw_json"),
-            "detected_at": r["detected_at"],
-        })
+        enriched.append(
+            {
+                "row_id": r["row_id"],
+                "unit": r.get("unit") or "—",
+                "batch_id": r["batch_id"],
+                "report_type": r["report_type"],
+                "reason": reason,
+                "move_out_date": r.get("move_out_date"),
+                "move_in_date": r.get("move_in_date"),
+                "raw_json": r.get("raw_json"),
+                "detected_at": r["detected_at"],
+            }
+        )
     return enriched
 
 
@@ -79,11 +80,11 @@ def resolve_invalid_row(
             raise ValueError(f"Unit '{unit_code}' not found.")
         turnover = turnover_service.get_open_turnover_for_unit(unit["unit_id"])
         if turnover is None:
-            raise ValueError(
-                f"No open turnover for unit '{unit_code}'."
-            )
+            raise ValueError(f"No open turnover for unit '{unit_code}'.")
         turnover_service.update_turnover(
-            turnover["turnover_id"], actor=actor, **corrected_fields,
+            turnover["turnover_id"],
+            actor=actor,
+            **corrected_fields,
         )
 
         audit_repository.insert(

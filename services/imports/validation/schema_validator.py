@@ -47,9 +47,7 @@ def validate_import_schema(report_type: str, file_path: str) -> None:
     try:
         df = pd.read_csv(file_path, skiprows=skiprows, nrows=0)
     except Exception as exc:
-        raise SchemaValidationError(
-            f"Unable to read CSV for schema validation: {exc}"
-        ) from exc
+        raise SchemaValidationError(f"Unable to read CSV for schema validation: {exc}") from exc
 
     # Pending FAS has "Unit Number" in the raw file — rename to "Unit"
     if report_type == "PENDING_FAS" and "Unit Number" in df.columns and "Unit" not in df.columns:
@@ -60,6 +58,5 @@ def validate_import_schema(report_type: str, file_path: str) -> None:
 
     if missing:
         raise SchemaValidationError(
-            f"Missing required columns for {report_type}: {missing}. "
-            f"Found: {sorted(actual)}"
+            f"Missing required columns for {report_type}: {missing}. Found: {sorted(actual)}"
         )

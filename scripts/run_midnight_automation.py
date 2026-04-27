@@ -9,6 +9,7 @@ Usage:
   python scripts/run_midnight_automation.py
   python scripts/run_midnight_automation.py --date 2026-03-16
 """
+
 from __future__ import annotations
 
 import argparse
@@ -23,9 +24,7 @@ def main() -> int:
     from config.settings import get_setting
 
     if not get_setting("DATABASE_URL"):
-        print(
-            "DATABASE_URL is not set. Set it in the environment or .streamlit/secrets.toml"
-        )
+        print("DATABASE_URL is not set. Set it in the environment or .streamlit/secrets.toml")
         return 1
 
     parser = argparse.ArgumentParser(
@@ -54,9 +53,7 @@ def main() -> int:
     cr = result["on_notice_created"]
 
     print(f"date={result['today']}")
-    print(
-        f"transitions: {tr['total_transitioned']} | on_notice_created: {cr['total_created']}"
-    )
+    print(f"transitions: {tr['total_transitioned']} | on_notice_created: {cr['total_created']}")
     for err in result["errors"]:
         print(f"  error: {err}")
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from db.repository import note_repository, audit_repository
+from db.repository import audit_repository, note_repository
 from services.write_guard import check_writes_enabled
 
 

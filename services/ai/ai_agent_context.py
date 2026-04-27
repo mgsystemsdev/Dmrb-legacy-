@@ -51,9 +51,7 @@ def build_context(property_id: int, today: date | None = None, user_id: int = 0)
     lines: list[str] = []
 
     lines.append(f"## DMRB Board Snapshot — {property_name} — as of {today}")
-    lines.append(
-        "_Authoritative for numeric answers. Do not invent values not present here._"
-    )
+    lines.append("_Authoritative for numeric answers. Do not invent values not present here._")
     lines.append("")
 
     lines.append("### Metrics")
@@ -85,9 +83,7 @@ def build_context(property_id: int, today: date | None = None, user_id: int = 0)
     )
     lines.append("")
 
-    lines.append(
-        f"### High-Risk Units (top {len(risk_rows)}, of {len(risk_rows_all)} scored)"
-    )
+    lines.append(f"### High-Risk Units (top {len(risk_rows)}, of {len(risk_rows_all)} scored)")
     if risk_rows:
         lines.append("| Unit | Phase | Score | Level | Reasons | Move-in |")
         lines.append("|------|-------|-------|-------|---------|---------|")
@@ -102,9 +98,7 @@ def build_context(property_id: int, today: date | None = None, user_id: int = 0)
         lines.append("_No scored units._")
     lines.append("")
 
-    lines.append(
-        f"### Stalled Work (top {len(stalled)}, of {len(stalled_all)} units)"
-    )
+    lines.append(f"### Stalled Work (top {len(stalled)}, of {len(stalled_all)} units)")
     if stalled:
         for s in stalled:
             lines.append(f"Unit {s['unit_code']} — DV {s['dv']}d")

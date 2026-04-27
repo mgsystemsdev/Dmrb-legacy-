@@ -28,6 +28,7 @@ def main() -> None:
         return
     import psycopg2
     from psycopg2.extras import RealDictCursor
+
     conn = psycopg2.connect(url)
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:

@@ -50,6 +50,7 @@ VALID_PHASES: set[str] | None = None  # None = accept all phases
 
 # ── Public API ───────────────────────────────────────────────────────────────
 
+
 def import_report_file(
     report_type: str,
     file_path: str,
@@ -127,7 +128,10 @@ def import_report_file(
     try:
         with transaction():
             batch = import_service.start_batch(
-                property_id, report_type, file_bytes, checksum=checksum,
+                property_id,
+                report_type,
+                file_bytes,
+                checksum=checksum,
             )
             batch_id = batch["batch_id"]
             import_service.mark_processing(batch_id)
@@ -158,6 +162,7 @@ def import_report_file(
 
 
 # ── Internal helpers ─────────────────────────────────────────────────────────
+
 
 def _read_file_bytes(file_path: str) -> bytes:
     with open(file_path, "rb") as f:

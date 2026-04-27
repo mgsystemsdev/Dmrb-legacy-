@@ -15,7 +15,6 @@ from __future__ import annotations
 
 from datetime import date
 
-
 _STATUSES_ALLOWING_CREATION: set[str] = {
     "vacant ready",
     "vacant not ready",

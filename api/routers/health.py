@@ -1,15 +1,18 @@
 from __future__ import annotations
+
 from fastapi import APIRouter, Depends
-from api.schemas.health import HealthResponse
+
 from api.deps import get_current_user
+from api.schemas.health import HealthResponse
 from db.connection import get_pool_stats
 
 router = APIRouter()
+
 
 @router.get("/health", response_model=HealthResponse)
 async def health_check(user: dict = Depends(get_current_user)):
     return {
         "status": "healthy",
         "db_pool": get_pool_stats(),
-        "queue_depth": 0 # Redis/RQ not enabled, synchronous execution
+        "queue_depth": 0,  # Redis/RQ not enabled, synchronous execution
     }

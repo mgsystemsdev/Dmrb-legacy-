@@ -89,10 +89,18 @@ async def get_workflow_summary(property_id: int, user: dict = Depends(get_curren
     uid = int(user["user_id"])
     scope_ids = scope_service.get_phase_scope(uid, property_id)
     board = board_service.get_board(property_id, today=today, phase_scope=scope_ids)
-    summary = board_service.get_board_summary(property_id, today=today, phase_scope=scope_ids, board=board)
-    metrics = board_service.get_board_metrics(property_id=property_id, today=today, phase_scope=scope_ids, board=board)
-    risk_metrics = board_service.get_morning_risk_metrics(property_id, today=today, phase_scope=scope_ids)
-    critical_units = board_service.get_todays_critical_units(property_id, today=today, phase_scope=scope_ids)
+    summary = board_service.get_board_summary(
+        property_id, today=today, phase_scope=scope_ids, board=board
+    )
+    metrics = board_service.get_board_metrics(
+        property_id=property_id, today=today, phase_scope=scope_ids, board=board
+    )
+    risk_metrics = board_service.get_morning_risk_metrics(
+        property_id, today=today, phase_scope=scope_ids
+    )
+    critical_units = board_service.get_todays_critical_units(
+        property_id, today=today, phase_scope=scope_ids
+    )
     import_timestamps = import_service.get_latest_import_timestamps(property_id)
     missing_move_outs = missing_move_out_service.list_missing_move_outs(property_id, user_id=uid)
     return _serialize(
@@ -129,7 +137,11 @@ async def get_flag_bridge(property_id: int, user: dict = Depends(get_current_use
 @router.get("/operations/report-operations/{property_id}/missing-move-outs")
 async def get_missing_move_outs(property_id: int, user: dict = Depends(get_current_user)):
     return _serialize(
-        {"rows": missing_move_out_service.list_missing_move_outs(property_id, user_id=int(user["user_id"]))}
+        {
+            "rows": missing_move_out_service.list_missing_move_outs(
+                property_id, user_id=int(user["user_id"])
+            )
+        }
     )
 
 
@@ -277,7 +289,9 @@ async def create_admin_user(body: CreateUserRequest, user: dict = Depends(get_cu
 
 
 @router.patch("/operations/admin/users/{user_id}")
-async def patch_admin_user(user_id: int, body: UpdateUserRequest, user: dict = Depends(get_current_user)):
+async def patch_admin_user(
+    user_id: int, body: UpdateUserRequest, user: dict = Depends(get_current_user)
+):
     _require_admin(user)
     try:
         if body.password is not None:
@@ -295,11 +309,31 @@ async def patch_admin_user(user_id: int, body: UpdateUserRequest, user: dict = D
 async def get_export_manifest(property_id: int, user: dict = Depends(get_current_user)):
     return {
         "downloads": [
-            {"key": "weekly-summary", "label": "Weekly Summary (TXT)", "href": f"/api/operations/exports/{property_id}/download/weekly-summary"},
-            {"key": "dashboard-chart", "label": "Dashboard Chart (PNG)", "href": f"/api/operations/exports/{property_id}/download/dashboard-chart"},
-            {"key": "final-report", "label": "Final Report (XLSX)", "href": f"/api/operations/exports/{property_id}/download/final-report"},
-            {"key": "dmrb-report", "label": "DMRB Report (XLSX)", "href": f"/api/operations/exports/{property_id}/download/dmrb-report"},
-            {"key": "all-reports", "label": "All Reports (ZIP)", "href": f"/api/operations/exports/{property_id}/download/all-reports"},
+            {
+                "key": "weekly-summary",
+                "label": "Weekly Summary (TXT)",
+                "href": f"/api/operations/exports/{property_id}/download/weekly-summary",
+            },
+            {
+                "key": "dashboard-chart",
+                "label": "Dashboard Chart (PNG)",
+                "href": f"/api/operations/exports/{property_id}/download/dashboard-chart",
+            },
+            {
+                "key": "final-report",
+                "label": "Final Report (XLSX)",
+                "href": f"/api/operations/exports/{property_id}/download/final-report",
+            },
+            {
+                "key": "dmrb-report",
+                "label": "DMRB Report (XLSX)",
+                "href": f"/api/operations/exports/{property_id}/download/dmrb-report",
+            },
+            {
+                "key": "all-reports",
+                "label": "All Reports (ZIP)",
+                "href": f"/api/operations/exports/{property_id}/download/all-reports",
+            },
         ]
     }
 
@@ -308,7 +342,9 @@ def _build_export_parts(property_id: int, user_id: int) -> tuple[bytes, bytes, b
     today = date.today()
     rows = export_service.build_export_turnovers(property_id, today=today, user_id=user_id)
     metrics = board_service.get_board_metrics(property_id=property_id, user_id=user_id)
-    summary_bytes = export_service.build_weekly_summary_bytes(property_id, today=today, user_id=user_id)
+    summary_bytes = export_service.build_weekly_summary_bytes(
+        property_id, today=today, user_id=user_id
+    )
     chart_bytes = export_chart.build_dashboard_chart(rows, today=today)
     final_bytes = export_excel.build_final_report(rows)
     dmrb_bytes = export_excel.build_dmrb_report(rows, metrics, today)
@@ -321,13 +357,29 @@ async def download_export(asset: str, property_id: int, user: dict = Depends(get
         property_id, int(user["user_id"])
     )
     if asset == "weekly-summary":
-        return Response(content=summary_bytes, media_type="text/plain", headers={"Content-Disposition": 'attachment; filename="Weekly_Summary.txt"'})
+        return Response(
+            content=summary_bytes,
+            media_type="text/plain",
+            headers={"Content-Disposition": 'attachment; filename="Weekly_Summary.txt"'},
+        )
     if asset == "dashboard-chart":
-        return Response(content=chart_bytes, media_type="image/png", headers={"Content-Disposition": 'attachment; filename="Dashboard_Chart.png"'})
+        return Response(
+            content=chart_bytes,
+            media_type="image/png",
+            headers={"Content-Disposition": 'attachment; filename="Dashboard_Chart.png"'},
+        )
     if asset == "final-report":
-        return Response(content=final_bytes, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": 'attachment; filename="Final_Report.xlsx"'})
+        return Response(
+            content=final_bytes,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": 'attachment; filename="Final_Report.xlsx"'},
+        )
     if asset == "dmrb-report":
-        return Response(content=dmrb_bytes, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": 'attachment; filename="DMRB_Report.xlsx"'})
+        return Response(
+            content=dmrb_bytes,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": 'attachment; filename="DMRB_Report.xlsx"'},
+        )
     if asset == "all-reports":
         zip_bytes = export_service.build_all_exports_zip_from_parts(
             final_bytes=final_bytes,
@@ -335,7 +387,11 @@ async def download_export(asset: str, property_id: int, user: dict = Depends(get
             chart_bytes=chart_bytes,
             summary_bytes=summary_bytes,
         )
-        return Response(content=zip_bytes, media_type="application/zip", headers={"Content-Disposition": 'attachment; filename="DMRB_Reports.zip"'})
+        return Response(
+            content=zip_bytes,
+            media_type="application/zip",
+            headers={"Content-Disposition": 'attachment; filename="DMRB_Reports.zip"'},
+        )
     raise HTTPException(status_code=404, detail="Unknown export asset")
 
 

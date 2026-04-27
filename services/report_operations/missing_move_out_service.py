@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 from datetime import date
 
-from db.repository import import_repository, audit_repository, turnover_repository
+from db.repository import audit_repository, import_repository, turnover_repository
 from domain.manual_override import should_apply_import_value
 from services import scope_service, turnover_service
 from services.write_guard import check_writes_enabled
@@ -53,9 +53,7 @@ def reconcile_pending_move_ins(property_id: int, user_id: int = 0) -> int:
             updates: dict = {"move_in_date": move_in_date}
             if clear_override:
                 updates["move_in_manual_override_at"] = None
-            turnover_service.update_turnover(
-                turnover["turnover_id"], actor="import", **updates
-            )
+            turnover_service.update_turnover(turnover["turnover_id"], actor="import", **updates)
 
         # Row is matched to a real turnover — resolve regardless of override
         import_repository.resolve_import_row(row["row_id"])

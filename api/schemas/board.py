@@ -1,7 +1,9 @@
 from __future__ import annotations
-from pydantic import BaseModel
+
 from datetime import date
 from typing import Dict, List, Optional, Tuple
+
+from pydantic import BaseModel
 
 
 class BoardTask(BaseModel):
@@ -38,6 +40,7 @@ class BoardRow(BaseModel):
     task_completion: Tuple[int, int]
     agreements: Dict[str, str]
     tasks: List[BoardTask]
+
 
 class BoardResponse(BaseModel):
     property_id: int

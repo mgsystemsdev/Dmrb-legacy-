@@ -1,25 +1,27 @@
-
 import os
 import sys
-from datetime import date
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from services import task_service
 from db.repository import task_repository
+from services import task_service
 from services.task_service import (
-    STATUS_SCHEDULED, STATUS_IN_PROGRESS, STATUS_COMPLETE, 
-    STATUS_BLOCKED, STATUS_SKIPPED, TaskError
+    STATUS_BLOCKED,
+    STATUS_IN_PROGRESS,
+    STATUS_SCHEDULED,
+    STATUS_SKIPPED,
+    TaskError,
 )
+
 
 def test_fsm():
     # Setup: need a property and turnover.
     property_id = 2
     turnover_id = 2
-    
+
     print("--- Starting Task FSM Verification ---")
-    
+
     # Create a task for testing
     task_type = "FSM_TEST_TASK"
     try:
@@ -30,7 +32,12 @@ def test_fsm():
                 # We don't have a delete_task in repo, so we just use it
                 task_id = t["task_id"]
                 # Reset to SCHEDULED directly via repo to avoid service validation
-                task_repository.update(task_id, execution_status=STATUS_SCHEDULED, skip_allowed=False, blocked_reason=None)
+                task_repository.update(
+                    task_id,
+                    execution_status=STATUS_SCHEDULED,
+                    skip_allowed=False,
+                    blocked_reason=None,
+                )
                 break
         else:
             task = task_service.create_task(property_id, turnover_id, task_type)
@@ -85,6 +92,7 @@ def test_fsm():
     try_transition(STATUS_IN_PROGRESS, expected_fail=True)
 
     print("--- Verification Finished ---")
+
 
 if __name__ == "__main__":
     test_fsm()

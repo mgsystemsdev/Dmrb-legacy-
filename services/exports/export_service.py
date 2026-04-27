@@ -66,8 +66,15 @@ _TASK_LABEL: dict[str, str] = {
 
 # Ordered task types matching the pipeline stages.
 _PIPELINE_TASK_TYPES = [
-    "INSPECT", "CARPET_BID", "MAKE_READY_BID", "PAINT", "MAKE_READY",
-    "HOUSEKEEPING", "CARPET_CLEAN", "FINAL_WALK", "QUALITY_CONTROL",
+    "INSPECT",
+    "CARPET_BID",
+    "MAKE_READY_BID",
+    "PAINT",
+    "MAKE_READY",
+    "HOUSEKEEPING",
+    "CARPET_CLEAN",
+    "FINAL_WALK",
+    "QUALITY_CONTROL",
 ]
 
 
@@ -144,13 +151,8 @@ def build_weekly_summary_text(
     by_phase = summary["by_phase"]
     by_readiness = summary["by_readiness"]
 
-    vacant = sum(
-        by_phase.get(p, 0)
-        for p in (tl.PHASE_VACANT_NOT_READY, tl.PHASE_VACANT_READY)
-    )
-    on_notice = sum(
-        by_phase.get(p, 0) for p in (tl.PHASE_ON_NOTICE, tl.PHASE_PRE_NOTICE)
-    )
+    vacant = sum(by_phase.get(p, 0) for p in (tl.PHASE_VACANT_NOT_READY, tl.PHASE_VACANT_READY))
+    on_notice = sum(by_phase.get(p, 0) for p in (tl.PHASE_ON_NOTICE, tl.PHASE_PRE_NOTICE))
     if active > 0:
         sla_ok = max(0, active - metrics["sla_breach"])
         sla_pct = round(100.0 * sla_ok / active, 1)
@@ -323,9 +325,7 @@ def build_export_turnovers(
         return []
 
     phases = property_service.get_phases(property_id)
-    phase_map: dict[int, str] = {
-        p["phase_id"]: p.get("name") or p["phase_code"] for p in phases
-    }
+    phase_map: dict[int, str] = {p["phase_id"]: p.get("name") or p["phase_code"] for p in phases}
 
     stalled_ids: set[int] = {
         e["turnover_id"] for e in board_service.work_stalled_unit_entries(board)
@@ -336,7 +336,12 @@ def build_export_turnovers(
         turnover = item["turnover"]
         unit = item.get("unit") or {}
         tasks: list[dict] = item.get("tasks") or []
-        readiness = item.get("readiness") or {"state": "NOT_STARTED", "completed": 0, "total": 0, "blockers": []}
+        readiness = item.get("readiness") or {
+            "state": "NOT_STARTED",
+            "completed": 0,
+            "total": 0,
+            "blockers": [],
+        }
         sla = item.get("sla") or {"risk_level": "OK"}
         agreements = item.get("agreements") or {}
         notes = item.get("notes") or []
@@ -367,54 +372,58 @@ def build_export_turnovers(
 
         turnover_id = turnover["turnover_id"]
 
-        rows.append({
-            "turnover_id": turnover_id,
-            "unit_code": unit_code,
-            "phase": phase,
-            "dv": turnover.get("vacancy_days"),
-            "dtbr": turnover.get("days_to_be_ready"),
-            "days_to_move_in": turnover.get("days_to_move_in"),
-            "operational_state": turnover["lifecycle_phase"],
-            "move_out_date": move_out_date,
-            "move_in_date": turnover.get("move_in_date"),
-            "report_ready_date": turnover.get("report_ready_date"),
-            "available_date": available_date,
-            "confirmed_move_out_date": turnover.get("confirmed_move_out_date"),
-            "scheduled_move_out_date": turnover.get("scheduled_move_out_date"),
-            "attention_badge": item["priority"],
-            "sla_breach": sla.get("risk_level") == "BREACH",
-            "plan_breach": agreements.get("plan") == "RED",
-            "inspection_sla_breach": agreements.get("inspection") == "RED",
-            "sla_movein_breach": agreements.get("move_in") == "RED",
-            "is_task_stalled": turnover_id in stalled_ids,
-            "task_completion_ratio": _completion_ratio(readiness),
-            "is_unit_ready": readiness.get("state") == READY,
-            "wd_present": wd_present,
-            "wd_summary": wd_summary,
-            "notes_joined": "; ".join(t["text"] for t in notes if t.get("text")),
-            # Task objects (None if task type not present for this turnover)
-            "task_insp": task_insp,
-            "task_paint": task_paint,
-            "task_mr": task_mr,
-            "task_hk": task_hk,
-            "task_carpet_clean": task_carpet_clean,
-            "task_fw": task_fw,
-            "task_qc": task_qc,
-            "task_carpet_bid": task_carpet_bid,
-            "task_mr_bid": task_mr_bid,
-            # Derived from FINAL_WALK task execution_status
-            "qc_status": _qc_status(task_fw),
-            # First and second blocking tasks (task dicts or None)
-            "current_task": current_task,
-            "next_task": next_task,
-            # Raw tasks list — used in Schedule/Upcoming sheets
-            "tasks_list": tasks,
-        })
-    rows.sort(key=lambda r: (
-        r["move_in_date"] is None,
-        r["move_in_date"] or date.max,
-        -int(r["dv"]) if is_finite_numeric(r.get("dv")) else 0,
-    ))
+        rows.append(
+            {
+                "turnover_id": turnover_id,
+                "unit_code": unit_code,
+                "phase": phase,
+                "dv": turnover.get("vacancy_days"),
+                "dtbr": turnover.get("days_to_be_ready"),
+                "days_to_move_in": turnover.get("days_to_move_in"),
+                "operational_state": turnover["lifecycle_phase"],
+                "move_out_date": move_out_date,
+                "move_in_date": turnover.get("move_in_date"),
+                "report_ready_date": turnover.get("report_ready_date"),
+                "available_date": available_date,
+                "confirmed_move_out_date": turnover.get("confirmed_move_out_date"),
+                "scheduled_move_out_date": turnover.get("scheduled_move_out_date"),
+                "attention_badge": item["priority"],
+                "sla_breach": sla.get("risk_level") == "BREACH",
+                "plan_breach": agreements.get("plan") == "RED",
+                "inspection_sla_breach": agreements.get("inspection") == "RED",
+                "sla_movein_breach": agreements.get("move_in") == "RED",
+                "is_task_stalled": turnover_id in stalled_ids,
+                "task_completion_ratio": _completion_ratio(readiness),
+                "is_unit_ready": readiness.get("state") == READY,
+                "wd_present": wd_present,
+                "wd_summary": wd_summary,
+                "notes_joined": "; ".join(t["text"] for t in notes if t.get("text")),
+                # Task objects (None if task type not present for this turnover)
+                "task_insp": task_insp,
+                "task_paint": task_paint,
+                "task_mr": task_mr,
+                "task_hk": task_hk,
+                "task_carpet_clean": task_carpet_clean,
+                "task_fw": task_fw,
+                "task_qc": task_qc,
+                "task_carpet_bid": task_carpet_bid,
+                "task_mr_bid": task_mr_bid,
+                # Derived from FINAL_WALK task execution_status
+                "qc_status": _qc_status(task_fw),
+                # First and second blocking tasks (task dicts or None)
+                "current_task": current_task,
+                "next_task": next_task,
+                # Raw tasks list — used in Schedule/Upcoming sheets
+                "tasks_list": tasks,
+            }
+        )
+    rows.sort(
+        key=lambda r: (
+            r["move_in_date"] is None,
+            r["move_in_date"] or date.max,
+            -int(r["dv"]) if is_finite_numeric(r.get("dv")) else 0,
+        )
+    )
     return rows
 
 

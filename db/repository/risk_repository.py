@@ -117,6 +117,7 @@ def resolve_by_type(turnover_id: int, risk_type: str) -> dict | None:
 
 # ── SLA Events ───────────────────────────────────────────────────────────────
 
+
 def get_open_sla_breach(turnover_id: int) -> dict | None:
     with get_connection() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(

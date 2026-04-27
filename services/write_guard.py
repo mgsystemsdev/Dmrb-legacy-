@@ -40,9 +40,7 @@ def check_writes_enabled() -> None:
         raise WritesDisabledError("Could not verify write permission — writes blocked for safety.")
 
     if not enabled:
-        raise WritesDisabledError(
-            "DB writes are disabled. Enable in Admin → DB Writes toggle."
-        )
+        raise WritesDisabledError("DB writes are disabled. Enable in Admin → DB Writes toggle.")
 
 
 def check_concurrency(entity: dict, table_name: str = "") -> None:

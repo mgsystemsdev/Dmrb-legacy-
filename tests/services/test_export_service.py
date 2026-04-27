@@ -1,4 +1,5 @@
 """Tests for Weekly Summary export (board-backed, no extra DB queries in export layer)."""
+
 from datetime import date, timedelta
 from unittest.mock import patch
 
@@ -74,8 +75,9 @@ REQUIRED_SECTIONS = (
 
 
 def test_weekly_summary_empty_board_has_all_sections():
-    with patch("services.exports.export_service.board_service.get_board", return_value=[]), patch(
-        "services.exports.export_service.scope_service.get_phase_scope", return_value=[]
+    with (
+        patch("services.exports.export_service.board_service.get_board", return_value=[]),
+        patch("services.exports.export_service.scope_service.get_phase_scope", return_value=[]),
     ):
         text = export_service.build_weekly_summary_text(1, today=TODAY, phase_scope=[])
     assert text.strip()
@@ -113,8 +115,9 @@ def test_weekly_summary_populated_board_metrics_and_alerts():
         ),
     ]
 
-    with patch("services.exports.export_service.board_service.get_board", return_value=board), patch(
-        "services.exports.export_service.scope_service.get_phase_scope", return_value=[]
+    with (
+        patch("services.exports.export_service.board_service.get_board", return_value=board),
+        patch("services.exports.export_service.scope_service.get_phase_scope", return_value=[]),
     ):
         text = export_service.build_weekly_summary_text(99, today=TODAY, phase_scope=[])
 
@@ -138,8 +141,9 @@ def test_weekly_summary_populated_board_metrics_and_alerts():
 
 
 def test_weekly_summary_bytes_non_empty():
-    with patch("services.exports.export_service.board_service.get_board", return_value=[]), patch(
-        "services.exports.export_service.scope_service.get_phase_scope", return_value=[]
+    with (
+        patch("services.exports.export_service.board_service.get_board", return_value=[]),
+        patch("services.exports.export_service.scope_service.get_phase_scope", return_value=[]),
     ):
         raw = export_service.build_weekly_summary_bytes(1, today=TODAY, phase_scope=[])
     assert len(raw) > 0
@@ -158,8 +162,9 @@ def test_weekly_summary_aging_skips_nan_vacancy_days():
         _board_item(tid=1, vacancy_days=float("nan")),
         _board_item(tid=2, vacancy_days=5, unit_code="B1"),
     ]
-    with patch("services.exports.export_service.board_service.get_board", return_value=board), patch(
-        "services.exports.export_service.scope_service.get_phase_scope", return_value=[]
+    with (
+        patch("services.exports.export_service.board_service.get_board", return_value=board),
+        patch("services.exports.export_service.scope_service.get_phase_scope", return_value=[]),
     ):
         text = export_service.build_weekly_summary_text(1, today=TODAY, phase_scope=[], board=board)
     assert "  1-10: 1" in text

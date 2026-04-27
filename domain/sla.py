@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from datetime import date
 
-
 # ── Defaults ─────────────────────────────────────────────────────────────────
 
 DEFAULT_SLA_THRESHOLD_DAYS = 14

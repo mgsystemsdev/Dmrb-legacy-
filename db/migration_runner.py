@@ -13,7 +13,6 @@ from pathlib import Path
 
 from db.connection import get_connection
 
-
 _MIGRATIONS_DIR = Path(__file__).parent / "migrations"
 _SCHEMA_PATH = Path(__file__).parent / "schema.sql"
 
@@ -61,7 +60,9 @@ def ensure_database_ready() -> None:
             """
         )
         if not cursor.fetchone()[0]:
-            migration_003 = (_MIGRATIONS_DIR / "003_import_pipeline_fields.sql").read_text(encoding="utf-8")
+            migration_003 = (_MIGRATIONS_DIR / "003_import_pipeline_fields.sql").read_text(
+                encoding="utf-8"
+            )
             cursor.execute(migration_003)
         # Apply migration 004 (import_row.resolved_at) if the column is missing
         cursor.execute(
@@ -76,7 +77,9 @@ def ensure_database_ready() -> None:
             """
         )
         if not cursor.fetchone()[0]:
-            migration_004 = (_MIGRATIONS_DIR / "004_import_row_resolved.sql").read_text(encoding="utf-8")
+            migration_004 = (_MIGRATIONS_DIR / "004_import_row_resolved.sql").read_text(
+                encoding="utf-8"
+            )
             cursor.execute(migration_004)
         # Apply migration 005 (phase_scope) if the table is missing (e.g. existing DBs)
         cursor.execute(
@@ -104,14 +107,18 @@ def ensure_database_ready() -> None:
             """
         )
         if not cursor.fetchone()[0]:
-            migration_006 = (_MIGRATIONS_DIR / "006_system_settings.sql").read_text(encoding="utf-8")
+            migration_006 = (_MIGRATIONS_DIR / "006_system_settings.sql").read_text(
+                encoding="utf-8"
+            )
             cursor.execute(migration_006)
         # Seed task_template when empty so turnovers get auto-created tasks (run 007 once)
         cursor.execute(
             "SELECT (SELECT COUNT(*) FROM phase) > 0 AND (SELECT COUNT(*) FROM task_template) = 0"
         )
         if cursor.fetchone()[0]:
-            migration_007 = (_MIGRATIONS_DIR / "007_seed_task_templates.sql").read_text(encoding="utf-8")
+            migration_007 = (_MIGRATIONS_DIR / "007_seed_task_templates.sql").read_text(
+                encoding="utf-8"
+            )
             cursor.execute(migration_007)
         # Apply migration 008 (drop manager_confirmed_at) if the column still exists
         cursor.execute(
@@ -126,7 +133,9 @@ def ensure_database_ready() -> None:
             """
         )
         if cursor.fetchone()[0]:
-            migration_008 = (_MIGRATIONS_DIR / "008_drop_manager_confirmed_at.sql").read_text(encoding="utf-8")
+            migration_008 = (_MIGRATIONS_DIR / "008_drop_manager_confirmed_at.sql").read_text(
+                encoding="utf-8"
+            )
             cursor.execute(migration_008)
         # Apply migration 009 (add completed_date) if the column is missing
         cursor.execute(
@@ -141,7 +150,9 @@ def ensure_database_ready() -> None:
             """
         )
         if not cursor.fetchone()[0]:
-            migration_009 = (_MIGRATIONS_DIR / "009_add_task_completed_date.sql").read_text(encoding="utf-8")
+            migration_009 = (_MIGRATIONS_DIR / "009_add_task_completed_date.sql").read_text(
+                encoding="utf-8"
+            )
             cursor.execute(migration_009)
         # Apply migration 010 (unit_on_notice_snapshot) if the table is missing
         cursor.execute(
@@ -155,7 +166,9 @@ def ensure_database_ready() -> None:
             """
         )
         if not cursor.fetchone()[0]:
-            migration_010 = (_MIGRATIONS_DIR / "010_unit_on_notice_snapshot.sql").read_text(encoding="utf-8")
+            migration_010 = (_MIGRATIONS_DIR / "010_unit_on_notice_snapshot.sql").read_text(
+                encoding="utf-8"
+            )
             cursor.execute(migration_010)
         # Apply migration 011 (unit_occupancy_global) if the table is missing
         cursor.execute(
@@ -169,7 +182,9 @@ def ensure_database_ready() -> None:
             """
         )
         if not cursor.fetchone()[0]:
-            migration_011 = (_MIGRATIONS_DIR / "011_unit_occupancy_global.sql").read_text(encoding="utf-8")
+            migration_011 = (_MIGRATIONS_DIR / "011_unit_occupancy_global.sql").read_text(
+                encoding="utf-8"
+            )
             cursor.execute(migration_011)
         # Apply migration 012 (app_user) if the table is missing
         cursor.execute(
@@ -198,7 +213,9 @@ def ensure_database_ready() -> None:
             """
         )
         if not cursor.fetchone()[0]:
-            migration_013 = (_MIGRATIONS_DIR / "013_add_wd_tracking.sql").read_text(encoding="utf-8")
+            migration_013 = (_MIGRATIONS_DIR / "013_add_wd_tracking.sql").read_text(
+                encoding="utf-8"
+            )
             cursor.execute(migration_013)
         # Apply migration 014 (lifecycle_event) if the table is missing
         cursor.execute(
@@ -212,7 +229,9 @@ def ensure_database_ready() -> None:
             """
         )
         if not cursor.fetchone()[0]:
-            migration_014 = (_MIGRATIONS_DIR / "014_lifecycle_event.sql").read_text(encoding="utf-8")
+            migration_014 = (_MIGRATIONS_DIR / "014_lifecycle_event.sql").read_text(
+                encoding="utf-8"
+            )
             cursor.execute(migration_014)
         # Apply migration 015 (task_fsm) if skip_allowed column is absent from task
         cursor.execute(
@@ -241,7 +260,9 @@ def ensure_database_ready() -> None:
             """
         )
         if not cursor.fetchone()[0]:
-            migration_016 = (_MIGRATIONS_DIR / "016_phase_scope_per_user.sql").read_text(encoding="utf-8")
+            migration_016 = (_MIGRATIONS_DIR / "016_phase_scope_per_user.sql").read_text(
+                encoding="utf-8"
+            )
             cursor.execute(migration_016)
         # Apply migration 017 (unit.floor_plan, unit.gross_sq_ft) if either column is missing
         cursor.execute(
@@ -263,5 +284,7 @@ def ensure_database_ready() -> None:
             """
         )
         if not cursor.fetchone()[0]:
-            migration_017 = (_MIGRATIONS_DIR / "017_add_unit_fields.sql").read_text(encoding="utf-8")
+            migration_017 = (_MIGRATIONS_DIR / "017_add_unit_fields.sql").read_text(
+                encoding="utf-8"
+            )
             cursor.execute(migration_017)

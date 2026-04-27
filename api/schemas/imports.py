@@ -1,13 +1,17 @@
 from __future__ import annotations
-from pydantic import BaseModel
+
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Dict, List, Optional
+
+from pydantic import BaseModel
+
 
 class UploadResponse(BaseModel):
     batch_id: Optional[int]
     status: str
     checksum: str
     diagnostics: List[str]
+
 
 class BatchStatusResponse(BaseModel):
     batch_id: int

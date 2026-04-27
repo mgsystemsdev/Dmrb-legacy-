@@ -14,6 +14,12 @@ from __future__ import annotations
 
 import logging
 
+from db.repository import (
+    audit_repository,
+    turnover_repository,
+    unit_on_notice_snapshot_repository,
+    unit_repository,
+)
 from domain import import_outcomes
 from domain.availability_status import (
     availability_status_to_manual_ready_status,
@@ -23,12 +29,6 @@ from domain.availability_status import (
 )
 from domain.manual_override import should_apply_import_value
 from domain.unit_identity import normalize_unit_code
-from db.repository import (
-    turnover_repository,
-    audit_repository,
-    unit_repository,
-    unit_on_notice_snapshot_repository,
-)
 from services import turnover_service
 from services.imports import common
 
@@ -97,13 +97,21 @@ def apply(
 
         if turnover is None:
             status, reason = _handle_no_turnover(
-                property_id, unit_id, raw_status, available_date,
-                move_in_ready_date, allows_creation, batch_id,
+                property_id,
+                unit_id,
+                raw_status,
+                available_date,
+                move_in_ready_date,
+                allows_creation,
+                batch_id,
             )
         else:
             status, reason = _handle_update_turnover(
-                turnover, raw_status, available_date,
-                move_in_ready_date, property_id,
+                turnover,
+                raw_status,
+                available_date,
+                move_in_ready_date,
+                property_id,
             )
 
         common.write_import_row(
@@ -134,6 +142,7 @@ def apply(
 
 
 # ── Internal helpers ─────────────────────────────────────────────────────────
+
 
 def _resolve_or_create_unit(
     property_id: int,
@@ -247,7 +256,9 @@ def _handle_update_turnover(
         ready_override_at = turnover.get("ready_manual_override_at")
 
         apply_ready, clear_ready = should_apply_import_value(
-            current_ready, ready_override_at, move_in_ready_date,
+            current_ready,
+            ready_override_at,
+            move_in_ready_date,
         )
 
         if apply_ready:
@@ -266,7 +277,9 @@ def _handle_update_turnover(
         status_override_at = turnover.get("status_manual_override_at")
 
         apply_status, clear_status = should_apply_import_value(
-            current_status, status_override_at, norm_status,
+            current_status,
+            status_override_at,
+            norm_status,
         )
 
         if apply_status:
@@ -290,7 +303,9 @@ def _handle_update_turnover(
     # ── Apply updates ────────────────────────────────────────────────────
     if updates:
         turnover_service.update_turnover(
-            turnover_id, actor="import", **updates,
+            turnover_id,
+            actor="import",
+            **updates,
         )
 
     # ── Bug 1 fix: always audit each skipped field, even when other

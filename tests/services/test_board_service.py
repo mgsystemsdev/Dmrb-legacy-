@@ -1,4 +1,5 @@
 """Tests for services/board_service.py against the JSON backend."""
+
 from datetime import date, timedelta
 from unittest.mock import patch
 
@@ -11,7 +12,6 @@ from services.board_service import (
     get_flag_bridge_metrics,
     has_any_breach,
 )
-
 
 REQUIRED_ITEM_KEYS = {"turnover", "unit", "tasks", "readiness", "sla", "priority"}
 AGREEMENT_KEYS = {"inspection", "sla", "move_in", "plan", "viol"}
@@ -94,6 +94,7 @@ def test_board_sorted_by_priority():
 def test_board_metrics_counts():
     """Metrics include active count; when using same scope, active matches board length."""
     from services import scope_service
+
     phase_scope = scope_service.get_phase_scope(0, 1)
     board = get_board(property_id=1, phase_scope=phase_scope)
     metrics = get_board_metrics(property_id=1, phase_scope=phase_scope)
@@ -181,7 +182,13 @@ def test_get_flag_bridge_metrics_violations_count():
 TODAY = date(2025, 6, 15)
 
 
-def _task(task_type: str = "CLEAN", execution_status: str = "COMPLETED", required: bool = True, blocking: bool = True, **kw) -> dict:
+def _task(
+    task_type: str = "CLEAN",
+    execution_status: str = "COMPLETED",
+    required: bool = True,
+    blocking: bool = True,
+    **kw,
+) -> dict:
     return {
         "task_id": 1,
         "turnover_id": 1,
@@ -365,6 +372,7 @@ def test_evaluation_gate_returns_none_when_normal_turnover():
 
 # ── Guard rail: Scenario A — Vacant Ready (all green) ───────────────────────
 
+
 def test_guard_rail_vacant_ready_item_has_no_breach():
     """Vacant Ready unit appears with all dots green (no violations)."""
     turnover = {
@@ -391,6 +399,7 @@ def test_guard_rail_vacant_ready_item_has_no_breach():
 
 # ── Guard rail: Scenario B — No move-out (skip evaluation) ───────────────────
 
+
 def test_guard_rail_no_move_out_produces_no_violations():
     """Unit with no move_out_date does not produce violations."""
     turnover = {
@@ -416,6 +425,7 @@ def test_guard_rail_no_move_out_produces_no_violations():
 
 # ── Guard rail: Scenario C — Cancelled (skip evaluation) ──────────────────────
 
+
 def test_guard_rail_cancelled_turnover_produces_no_violations():
     """Cancelled turnover gets healthy defaults and no violations."""
     turnover = {
@@ -440,6 +450,7 @@ def test_guard_rail_cancelled_turnover_produces_no_violations():
 
 # ── Guard rail: Scenario D — Normal turnover (full evaluation) ───────────────
 
+
 def test_guard_rail_normal_turnover_still_evaluated():
     """Normal turnover (with move-out, not cancelled, not Vacant Ready) runs full pipeline."""
     turnover = {
@@ -461,20 +472,21 @@ def test_guard_rail_normal_turnover_still_evaluated():
             "blocking": True,
         }
     ]
-    with patch(
-        "services.board_service.turnover_repository.get_open_by_property",
-        return_value=[turnover],
-    ), patch(
-        "services.board_service.task_repository.get_by_turnover",
-        return_value=tasks,
+    with (
+        patch(
+            "services.board_service.turnover_repository.get_open_by_property",
+            return_value=[turnover],
+        ),
+        patch(
+            "services.board_service.task_repository.get_by_turnover",
+            return_value=tasks,
+        ),
     ):
         board = get_board(property_id=1, today=TODAY)
     assert len(board) == 1
     item = board[0]
     # Full evaluation ran: priority could be INSPECTION_DELAY or other breach
-    assert item["priority"] in (
-        "MOVE_IN_DANGER", "SLA_RISK", "INSPECTION_DELAY", "NORMAL", "LOW"
-    )
+    assert item["priority"] in ("MOVE_IN_DANGER", "SLA_RISK", "INSPECTION_DELAY", "NORMAL", "LOW")
     assert "lifecycle_phase" in item["turnover"]
     assert "readiness" in item
     assert "sla" in item

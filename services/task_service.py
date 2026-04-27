@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, timedelta
 
-from db.repository import task_repository, turnover_repository, audit_repository
+from db.repository import audit_repository, task_repository, turnover_repository
 from domain import readiness as readiness_domain
 from services.write_guard import check_writes_enabled
 
@@ -46,7 +46,9 @@ ALLOWED_TRANSITIONS = {
 }
 
 
-def validate_status_transition(task: dict, new_status: str, blocked_reason: str | None = None) -> None:
+def validate_status_transition(
+    task: dict, new_status: str, blocked_reason: str | None = None
+) -> None:
     """Validate that the task can move from its current status to new_status.
 
     Enforces:
@@ -115,9 +117,7 @@ def get_yesterday_completions(
     ref = _last_business_completion_date(today or date.today())
     if phase_scope is None:
         phase_scope = scope_service.get_phase_scope(user_id, property_id)
-    rows = task_repository.get_completed_on(
-        property_id, ref, phase_ids=phase_scope
-    )
+    rows = task_repository.get_completed_on(property_id, ref, phase_ids=phase_scope)
     return [
         {
             "unit_code": r["unit_code"],
@@ -145,9 +145,7 @@ def create_task(
     existing = task_repository.get_by_turnover(turnover_id)
     for t in existing:
         if t["task_type"] == task_type:
-            raise TaskError(
-                f"Task type '{task_type}' already exists for turnover {turnover_id}."
-            )
+            raise TaskError(f"Task type '{task_type}' already exists for turnover {turnover_id}.")
 
     task = task_repository.insert(
         property_id,
@@ -318,7 +316,6 @@ def get_schedule_rows(
     vendor_due_date, execution_status, assignee.
     """
     from db.repository import unit_repository
-
     from services import scope_service
 
     if phase_scope is None:
@@ -328,9 +325,7 @@ def get_schedule_rows(
         return []
 
     units_by_id: dict[int, dict] = {}
-    for u in unit_repository.get_by_property(
-        property_id, active_only=False, phase_ids=phase_scope
-    ):
+    for u in unit_repository.get_by_property(property_id, active_only=False, phase_ids=phase_scope):
         units_by_id[u["unit_id"]] = u
 
     rows: list[dict] = []
@@ -339,15 +334,17 @@ def get_schedule_rows(
         unit_code = unit["unit_code_norm"] if unit else "?"
         tasks = task_repository.get_by_turnover(t["turnover_id"])
         for task in tasks:
-            rows.append({
-                "task_id": task["task_id"],
-                "task_type": task["task_type"],
-                "unit_code": unit_code,
-                "scheduled_date": task.get("scheduled_date"),
-                "vendor_due_date": task.get("vendor_due_date"),
-                "execution_status": task["execution_status"],
-                "assignee": task.get("assignee"),
-            })
+            rows.append(
+                {
+                    "task_id": task["task_id"],
+                    "task_type": task["task_type"],
+                    "unit_code": unit_code,
+                    "scheduled_date": task.get("scheduled_date"),
+                    "vendor_due_date": task.get("vendor_due_date"),
+                    "execution_status": task["execution_status"],
+                    "assignee": task.get("assignee"),
+                }
+            )
     return rows
 
 

@@ -61,7 +61,9 @@ def main() -> int:
         return 1
     ph = hash_password(pwd)
     row = user_repository.insert(args.username, ph, args.role)
-    print(f"Created app_user user_id={row['user_id']} username={row['username']} role={row['role']}")
+    print(
+        f"Created app_user user_id={row['user_id']} username={row['username']} role={row['role']}"
+    )
     return 0
 
 

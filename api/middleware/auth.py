@@ -1,11 +1,14 @@
 from __future__ import annotations
+
 import time
+
 from fastapi import Request
+from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse, Response
-from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
-from config.settings import SECRET_KEY
+
 from api.session_cookie import AUTH_COOKIE_NAME
+from config.settings import SECRET_KEY
 from services import auth_service
 
 _API_PUBLIC_PREFIXES = (
@@ -20,17 +23,20 @@ _API_PUBLIC_PREFIXES = (
 def _is_public_api_path(path: str) -> bool:
     return any(path == p or path.startswith(p + "/") for p in _API_PUBLIC_PREFIXES)
 
-_PUBLIC_PATHS = frozenset({
-    "/",
-    "/login",
-    "/logout",
-    "/docs",
-    "/openapi.json",
-    "/api/docs",
-    "/api/openapi.json",
-    "/favicon.ico",
-    "/vite.svg",
-})
+
+_PUBLIC_PATHS = frozenset(
+    {
+        "/",
+        "/login",
+        "/logout",
+        "/docs",
+        "/openapi.json",
+        "/api/docs",
+        "/api/openapi.json",
+        "/favicon.ico",
+        "/vite.svg",
+    }
+)
 
 
 def _is_htmx(request: Request) -> bool:

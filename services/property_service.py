@@ -32,7 +32,10 @@ def get_building_by_id(building_id: int) -> dict | None:
 
 
 def get_units_by_building(
-    property_id: int, building_id: int, *, active_only: bool = True,
+    property_id: int,
+    building_id: int,
+    *,
+    active_only: bool = True,
 ) -> list[dict]:
     """Return units filtered to a specific building."""
     all_units = unit_repository.get_by_property(property_id, active_only=active_only)
@@ -40,7 +43,10 @@ def get_units_by_building(
 
 
 def get_units_by_phase(
-    property_id: int, phase_id: int, *, active_only: bool = True,
+    property_id: int,
+    phase_id: int,
+    *,
+    active_only: bool = True,
 ) -> list[dict]:
     """Return units filtered to a specific phase."""
     all_units = unit_repository.get_by_property(property_id, active_only=active_only)
@@ -58,12 +64,15 @@ def create_phase(property_id: int, phase_code: str, name: str | None = None) -> 
     from services import task_service
 
     task_service.ensure_default_templates_for_phase(
-        property_id, int(phase["phase_id"]),
+        property_id,
+        int(phase["phase_id"]),
     )
     return phase
 
 
-def create_building(property_id: int, phase_id: int, building_code: str, name: str | None = None) -> dict:
+def create_building(
+    property_id: int, phase_id: int, building_code: str, name: str | None = None
+) -> dict:
     check_writes_enabled()
     return property_repository.insert_building(property_id, phase_id, building_code, name)
 
@@ -83,10 +92,16 @@ def create_unit(
 ) -> dict:
     check_writes_enabled()
     return unit_repository.insert(
-        property_id, unit_code_raw, unit_code_norm, unit_identity_key,
-        phase_id=phase_id, building_id=building_id,
-        floor_plan=floor_plan, gross_sq_ft=gross_sq_ft,
-        has_carpet=has_carpet, has_wd_expected=has_wd_expected,
+        property_id,
+        unit_code_raw,
+        unit_code_norm,
+        unit_identity_key,
+        phase_id=phase_id,
+        building_id=building_id,
+        floor_plan=floor_plan,
+        gross_sq_ft=gross_sq_ft,
+        has_carpet=has_carpet,
+        has_wd_expected=has_wd_expected,
     )
 
 

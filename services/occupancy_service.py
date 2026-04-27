@@ -51,7 +51,9 @@ def ingest(property_id: int, records: list[dict]) -> dict:
         if unit_row is None:
             logger.debug(
                 "occupancy_service.ingest: unit '%s' (norm: '%s') not found for property %d",
-                raw_unit, unit_norm, property_id,
+                raw_unit,
+                unit_norm,
+                property_id,
             )
             unresolved += 1
             continue
@@ -61,7 +63,10 @@ def ingest(property_id: int, records: list[dict]) -> dict:
 
     logger.info(
         "occupancy_service.ingest: property=%d processed=%d matched=%d unresolved=%d",
-        property_id, processed, matched, unresolved,
+        property_id,
+        processed,
+        matched,
+        unresolved,
     )
     return {"processed": processed, "matched": matched, "unresolved": unresolved}
 
@@ -113,7 +118,8 @@ def ingest_resident_activity(
 
     logger.info(
         "occupancy_service.ingest_resident_activity: %d raw records → %d after de-duplication",
-        len(raw_records), len(clean_records),
+        len(raw_records),
+        len(clean_records),
     )
     return ingest(property_id, clean_records)
 

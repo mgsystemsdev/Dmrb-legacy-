@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import time
-from itsdangerous import URLSafeTimedSerializer
+
 from fastapi import Response
+from itsdangerous import URLSafeTimedSerializer
+
 from config.settings import SECRET_KEY, SESSION_COOKIE_SECURE
 
 AUTH_COOKIE_NAME = "session"

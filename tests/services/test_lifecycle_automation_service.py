@@ -3,20 +3,16 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
-from unittest.mock import patch, ANY
-
-import pytest
+from unittest.mock import ANY, patch
 
 from services.automation.lifecycle_automation_service import (
     AUTO_TRANSITION_MAX_DV,
     AUTOMATION_SOURCE,
     run_available_date_transition,
     run_available_date_transition_all_properties,
-    run_on_notice_turnover_creation,
-    run_on_notice_turnover_creation_all_properties,
     run_midnight_automation,
+    run_on_notice_turnover_creation,
 )
-
 
 # Fixed date for deterministic tests.
 TODAY = date(2026, 3, 20)
@@ -39,9 +35,16 @@ def test_scenario_a_eligible_unit_transitions_and_audits():
         }
     ]
     with (
-        patch("services.automation.lifecycle_automation_service.turnover_repository.get_open_by_property", return_value=fake_turnovers),
-        patch("services.automation.lifecycle_automation_service.turnover_service.update_turnover") as mock_update,
-        patch("services.automation.lifecycle_automation_service.audit_repository.insert") as mock_audit,
+        patch(
+            "services.automation.lifecycle_automation_service.turnover_repository.get_open_by_property",
+            return_value=fake_turnovers,
+        ),
+        patch(
+            "services.automation.lifecycle_automation_service.turnover_service.update_turnover"
+        ) as mock_update,
+        patch(
+            "services.automation.lifecycle_automation_service.audit_repository.insert"
+        ) as mock_audit,
     ):
         result = run_available_date_transition(property_id=1, today=TODAY)
 
@@ -54,7 +57,9 @@ def test_scenario_a_eligible_unit_transitions_and_audits():
         availability_status="vacant not ready",
         status_manual_override_at=ANY,
     )
-    audit_calls = [c for c in mock_audit.call_args_list if c.kwargs.get("source") == AUTOMATION_SOURCE]
+    audit_calls = [
+        c for c in mock_audit.call_args_list if c.kwargs.get("source") == AUTOMATION_SOURCE
+    ]
     assert len(audit_calls) == 1
     assert audit_calls[0].kwargs["entity_type"] == "turnover"
     assert audit_calls[0].kwargs["entity_id"] == 99
@@ -78,8 +83,13 @@ def test_scenario_a2_catchup_dv5_transitions():
         }
     ]
     with (
-        patch("services.automation.lifecycle_automation_service.turnover_repository.get_open_by_property", return_value=fake_turnovers),
-        patch("services.automation.lifecycle_automation_service.turnover_service.update_turnover") as mock_update,
+        patch(
+            "services.automation.lifecycle_automation_service.turnover_repository.get_open_by_property",
+            return_value=fake_turnovers,
+        ),
+        patch(
+            "services.automation.lifecycle_automation_service.turnover_service.update_turnover"
+        ) as mock_update,
         patch("services.automation.lifecycle_automation_service.audit_repository.insert"),
     ):
         result = run_available_date_transition(property_id=1, today=TODAY)
@@ -105,8 +115,13 @@ def test_scenario_a3_beyond_catchup_window_no_change():
         }
     ]
     with (
-        patch("services.automation.lifecycle_automation_service.turnover_repository.get_open_by_property", return_value=fake_turnovers),
-        patch("services.automation.lifecycle_automation_service.turnover_service.update_turnover") as mock_update,
+        patch(
+            "services.automation.lifecycle_automation_service.turnover_repository.get_open_by_property",
+            return_value=fake_turnovers,
+        ),
+        patch(
+            "services.automation.lifecycle_automation_service.turnover_service.update_turnover"
+        ) as mock_update,
     ):
         result = run_available_date_transition(property_id=1, today=TODAY)
 
@@ -131,16 +146,25 @@ def test_scenario_b_future_move_out_no_change():
         }
     ]
     with (
-        patch("services.automation.lifecycle_automation_service.turnover_repository.get_open_by_property", return_value=fake_turnovers),
-        patch("services.automation.lifecycle_automation_service.turnover_service.update_turnover") as mock_update,
-        patch("services.automation.lifecycle_automation_service.audit_repository.insert") as mock_audit,
+        patch(
+            "services.automation.lifecycle_automation_service.turnover_repository.get_open_by_property",
+            return_value=fake_turnovers,
+        ),
+        patch(
+            "services.automation.lifecycle_automation_service.turnover_service.update_turnover"
+        ) as mock_update,
+        patch(
+            "services.automation.lifecycle_automation_service.audit_repository.insert"
+        ) as mock_audit,
     ):
         result = run_available_date_transition(property_id=1, today=TODAY)
 
     assert result["transitioned"] == 0
     assert result["errors"] == []
     mock_update.assert_not_called()
-    automation_audits = [c for c in mock_audit.call_args_list if c.kwargs.get("source") == AUTOMATION_SOURCE]
+    automation_audits = [
+        c for c in mock_audit.call_args_list if c.kwargs.get("source") == AUTOMATION_SOURCE
+    ]
     assert len(automation_audits) == 0
 
 
@@ -160,8 +184,13 @@ def test_scenario_c_already_vacant_not_ready_not_selected():
         }
     ]
     with (
-        patch("services.automation.lifecycle_automation_service.turnover_repository.get_open_by_property", return_value=fake_turnovers),
-        patch("services.automation.lifecycle_automation_service.turnover_service.update_turnover") as mock_update,
+        patch(
+            "services.automation.lifecycle_automation_service.turnover_repository.get_open_by_property",
+            return_value=fake_turnovers,
+        ),
+        patch(
+            "services.automation.lifecycle_automation_service.turnover_service.update_turnover"
+        ) as mock_update,
     ):
         result = run_available_date_transition(property_id=1, today=TODAY)
 
@@ -175,12 +204,31 @@ def test_scenario_c_already_vacant_not_ready_not_selected():
 def test_scenario_d_not_on_notice_no_change():
     """manual_ready_status Vacant Ready or None → no transition."""
     fake_turnovers = [
-        {"turnover_id": 96, "property_id": 1, "manual_ready_status": "Vacant Ready", "move_out_date": TODAY, "closed_at": None, "canceled_at": None},
-        {"turnover_id": 95, "property_id": 1, "manual_ready_status": None, "move_out_date": TODAY, "closed_at": None, "canceled_at": None},
+        {
+            "turnover_id": 96,
+            "property_id": 1,
+            "manual_ready_status": "Vacant Ready",
+            "move_out_date": TODAY,
+            "closed_at": None,
+            "canceled_at": None,
+        },
+        {
+            "turnover_id": 95,
+            "property_id": 1,
+            "manual_ready_status": None,
+            "move_out_date": TODAY,
+            "closed_at": None,
+            "canceled_at": None,
+        },
     ]
     with (
-        patch("services.automation.lifecycle_automation_service.turnover_repository.get_open_by_property", return_value=fake_turnovers),
-        patch("services.automation.lifecycle_automation_service.turnover_service.update_turnover") as mock_update,
+        patch(
+            "services.automation.lifecycle_automation_service.turnover_repository.get_open_by_property",
+            return_value=fake_turnovers,
+        ),
+        patch(
+            "services.automation.lifecycle_automation_service.turnover_service.update_turnover"
+        ) as mock_update,
     ):
         result = run_available_date_transition(property_id=1, today=TODAY)
 
@@ -194,10 +242,20 @@ def test_scenario_d_not_on_notice_no_change():
 def test_scenario_e_repeat_execution_no_duplicate():
     """After first run turnover is Vacant Not Ready; second run does not select it (idempotent)."""
     fake_first = [
-        {"turnover_id": 94, "property_id": 1, "manual_ready_status": "On Notice", "move_out_date": TODAY, "closed_at": None, "canceled_at": None}
+        {
+            "turnover_id": 94,
+            "property_id": 1,
+            "manual_ready_status": "On Notice",
+            "move_out_date": TODAY,
+            "closed_at": None,
+            "canceled_at": None,
+        }
     ]
     with (
-        patch("services.automation.lifecycle_automation_service.turnover_repository.get_open_by_property", return_value=fake_first),
+        patch(
+            "services.automation.lifecycle_automation_service.turnover_repository.get_open_by_property",
+            return_value=fake_first,
+        ),
         patch("services.automation.lifecycle_automation_service.turnover_service.update_turnover"),
         patch("services.automation.lifecycle_automation_service.audit_repository.insert"),
     ):
@@ -205,11 +263,23 @@ def test_scenario_e_repeat_execution_no_duplicate():
     assert r1["transitioned"] == 1
 
     fake_second = [
-        {"turnover_id": 94, "property_id": 1, "manual_ready_status": "Vacant Not Ready", "move_out_date": TODAY, "closed_at": None, "canceled_at": None}
+        {
+            "turnover_id": 94,
+            "property_id": 1,
+            "manual_ready_status": "Vacant Not Ready",
+            "move_out_date": TODAY,
+            "closed_at": None,
+            "canceled_at": None,
+        }
     ]
     with (
-        patch("services.automation.lifecycle_automation_service.turnover_repository.get_open_by_property", return_value=fake_second),
-        patch("services.automation.lifecycle_automation_service.turnover_service.update_turnover") as mock_update,
+        patch(
+            "services.automation.lifecycle_automation_service.turnover_repository.get_open_by_property",
+            return_value=fake_second,
+        ),
+        patch(
+            "services.automation.lifecycle_automation_service.turnover_service.update_turnover"
+        ) as mock_update,
     ):
         r2 = run_available_date_transition(property_id=1, today=TODAY)
 
@@ -223,11 +293,23 @@ def test_scenario_e_repeat_execution_no_duplicate():
 def test_eligible_requires_move_out_date():
     """Turnover with manual_ready_status On Notice but move_out_date None is not eligible."""
     fake_turnovers = [
-        {"turnover_id": 93, "property_id": 1, "manual_ready_status": "On Notice", "move_out_date": None, "closed_at": None, "canceled_at": None}
+        {
+            "turnover_id": 93,
+            "property_id": 1,
+            "manual_ready_status": "On Notice",
+            "move_out_date": None,
+            "closed_at": None,
+            "canceled_at": None,
+        }
     ]
     with (
-        patch("services.automation.lifecycle_automation_service.turnover_repository.get_open_by_property", return_value=fake_turnovers),
-        patch("services.automation.lifecycle_automation_service.turnover_service.update_turnover") as mock_update,
+        patch(
+            "services.automation.lifecycle_automation_service.turnover_repository.get_open_by_property",
+            return_value=fake_turnovers,
+        ),
+        patch(
+            "services.automation.lifecycle_automation_service.turnover_service.update_turnover"
+        ) as mock_update,
     ):
         result = run_available_date_transition(property_id=1, today=TODAY)
 
@@ -242,13 +324,21 @@ def test_run_all_properties_aggregates():
     """run_available_date_transition_all_properties returns aggregated counts and by_property."""
     with (
         patch("db.repository.property_repository.get_all") as mock_get_all,
-        patch("services.automation.lifecycle_automation_service.run_available_date_transition") as mock_run,
+        patch(
+            "services.automation.lifecycle_automation_service.run_available_date_transition"
+        ) as mock_run,
     ):
         mock_get_all.return_value = [{"property_id": 1}, {"property_id": 2}]
-        mock_run.side_effect = [{"transitioned": 2, "errors": []}, {"transitioned": 0, "errors": ["err"]}]
+        mock_run.side_effect = [
+            {"transitioned": 2, "errors": []},
+            {"transitioned": 0, "errors": ["err"]},
+        ]
         result = run_available_date_transition_all_properties(today=TODAY)
     assert result["total_transitioned"] == 2
-    assert result["by_property"] == {1: {"transitioned": 2, "errors": []}, 2: {"transitioned": 0, "errors": ["err"]}}
+    assert result["by_property"] == {
+        1: {"transitioned": 2, "errors": []},
+        2: {"transitioned": 0, "errors": ["err"]},
+    }
     assert "property_id=2" in result["errors"][0]
 
 
@@ -303,7 +393,9 @@ def test_on_notice_creation_creates_turnover_and_deletes_snapshot():
     assert mock_update.call_args.kwargs["manual_ready_status"] == "Vacant Not Ready"
     assert mock_update.call_args.kwargs["report_ready_date"] == date(2026, 3, 25)
     mock_delete.assert_called_once_with(1, 101)
-    audit_calls = [c for c in mock_audit.call_args_list if c.kwargs.get("source") == AUTOMATION_SOURCE]
+    audit_calls = [
+        c for c in mock_audit.call_args_list if c.kwargs.get("source") == AUTOMATION_SOURCE
+    ]
     assert len(audit_calls) == 1
 
 

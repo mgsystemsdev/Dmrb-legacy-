@@ -80,7 +80,8 @@ def record_unit_moving(unit_number: str, moving_date: date) -> None:
     """Record a single unit moving. Called from the import pipeline."""
     try:
         unit_movings_repository.insert_moving(
-            normalize_moving_unit_key(unit_number), moving_date,
+            normalize_moving_unit_key(unit_number),
+            moving_date,
         )
     except Exception:
         logger.exception("Failed to record unit moving for %s on %s", unit_number, moving_date)

@@ -15,28 +15,29 @@ from datetime import date
 logger = logging.getLogger(__name__)
 
 from db.repository import (
-    turnover_repository,
-    task_repository,
-    unit_repository,
-    risk_repository,
     note_repository,
+    risk_repository,
+    task_repository,
+    turnover_repository,
+    unit_repository,
 )
-from domain import turnover_lifecycle, readiness as readiness_domain, sla as sla_domain
+from domain import readiness as readiness_domain
+from domain import sla as sla_domain
+from domain import turnover_lifecycle
 from domain.availability_status import (
     effective_availability_status,
     effective_manual_ready_status,
 )
-from domain.readiness import READY, BLOCKED, IN_PROGRESS, NOT_STARTED, NO_TASKS
-from domain.sla import SLA_OK
-from domain.turnover_lifecycle import PHASE_VACANT_READY, PHASE_PRE_NOTICE
-from services import scope_service
 from domain.priority_engine import (
+    DEFAULT_SLA_THRESHOLD_DAYS,
+    PRIORITY_ORDER,
     derive_priority_from_agreements,
     urgency_sort_key,
-    PRIORITY_ORDER,
-    DEFAULT_SLA_THRESHOLD_DAYS,
 )
-
+from domain.readiness import BLOCKED, IN_PROGRESS, NO_TASKS, NOT_STARTED, READY
+from domain.sla import SLA_OK
+from domain.turnover_lifecycle import PHASE_PRE_NOTICE, PHASE_VACANT_READY
+from services import scope_service
 
 # Agreement evaluation (Phase 4): task types treated as "inspection" for inspection agreement
 INSPECTION_TASK_TYPES = frozenset({"INSPECT", "INSPECTION"})
@@ -75,9 +76,7 @@ def evaluate_turnover_agreements(
     if not inspection_tasks:
         inspection_flag = "GREEN"
     else:
-        inspection_done = any(
-            t["execution_status"] == "COMPLETE" for t in inspection_tasks
-        )
+        inspection_done = any(t["execution_status"] == "COMPLETE" for t in inspection_tasks)
         if inspection_done:
             inspection_flag = "GREEN"
         else:
@@ -113,11 +112,7 @@ def evaluate_turnover_agreements(
         move_in_flag = "GREEN"
 
     # Plan agreement: past report_ready_date and not READY
-    if (
-        ready_plan_date is not None
-        and today > ready_plan_date
-        and readiness != READY
-    ):
+    if ready_plan_date is not None and today > ready_plan_date and readiness != READY:
         plan_flag = "RED"
     else:
         plan_flag = "GREEN"
@@ -174,7 +169,15 @@ def _evaluation_gate(turnover: dict, today: date) -> str | None:
     phase = turnover_lifecycle.lifecycle_phase(turnover, today)
     if phase == PHASE_VACANT_READY:
         return "vacant_ready"
-    avail = (effective_availability_status(turnover, today) or turnover.get("availability_status") or "").strip().lower()
+    avail = (
+        (
+            effective_availability_status(turnover, today)
+            or turnover.get("availability_status")
+            or ""
+        )
+        .strip()
+        .lower()
+    )
     if avail in ("vacant ready", "beacon ready"):
         return "vacant_ready"
     return None
@@ -277,9 +280,7 @@ def get_board(
         return []
 
     units_by_id = {}
-    units = unit_repository.get_by_property(
-        property_id, active_only=False, phase_ids=phase_scope
-    )
+    units = unit_repository.get_by_property(property_id, active_only=False, phase_ids=phase_scope)
     for u in units:
         units_by_id[u["unit_id"]] = u
 
@@ -298,9 +299,7 @@ def get_board(
         gate = _evaluation_gate(turnover, today)
         if gate in ("skip_evaluation", "vacant_ready"):
             board.append(
-                _build_healthy_board_item(
-                    turnover, unit, tasks, today, gate, risks, notes
-                )
+                _build_healthy_board_item(turnover, unit, tasks, today, gate, risks, notes)
             )
             continue
 
@@ -372,9 +371,7 @@ def get_board_view(
     When phase_scope is None, resolves via scope_service.get_phase_scope(user_id, property_id)."""
     if phase_scope is None:
         phase_scope = scope_service.get_phase_scope(user_id, property_id)
-    return get_board(
-        property_id, today=today, sla_threshold=sla_threshold, phase_scope=phase_scope
-    )
+    return get_board(property_id, today=today, sla_threshold=sla_threshold, phase_scope=phase_scope)
 
 
 def work_stalled_unit_entries(board: list[dict]) -> list[dict]:
@@ -560,7 +557,12 @@ def get_flag_units(
         code = unit["unit_code_norm"] if unit else "?"
         dv = item["turnover"].get("days_since_move_out", 0)
         phase_id = unit.get("phase_id") if unit else None
-        entry = {"unit_code": code, "dv": dv, "turnover_id": item["turnover"]["turnover_id"], "phase_id": phase_id}
+        entry = {
+            "unit_code": code,
+            "dv": dv,
+            "turnover_id": item["turnover"]["turnover_id"],
+            "phase_id": phase_id,
+        }
 
         if agreements is not None:
             if agreements.get("move_in") == "RED":
@@ -638,9 +640,13 @@ def get_todays_critical_units(
         mo = turnover.get("move_out_date")
         mi = turnover.get("move_in_date")
         if mo == today:
-            critical.append({"unit_code": code, "event": "Move-Out", "date": "Today", "turnover_id": tid})
+            critical.append(
+                {"unit_code": code, "event": "Move-Out", "date": "Today", "turnover_id": tid}
+            )
         if mi == today:
-            critical.append({"unit_code": code, "event": "Move-In", "date": "Today", "turnover_id": tid})
+            critical.append(
+                {"unit_code": code, "event": "Move-In", "date": "Today", "turnover_id": tid}
+            )
     return critical
 
 
@@ -664,11 +670,17 @@ def filter_by_flag_category(board: list[dict], category: str) -> list[dict]:
             readiness_state = item["readiness"]["state"]
             if category == "MOVE_IN_DANGER" and priority == "MOVE_IN_DANGER":
                 result.append(item)
-            elif category == "SLA_RISK" and (priority == "SLA_RISK" or sla_level in ("WARNING", "BREACH")):
+            elif category == "SLA_RISK" and (
+                priority == "SLA_RISK" or sla_level in ("WARNING", "BREACH")
+            ):
                 result.append(item)
             elif category == "INSPECTION_DELAY" and priority == "INSPECTION_DELAY":
                 result.append(item)
-            elif category == "PLAN_BREACH" and readiness_state == "BLOCKED" and priority not in ("MOVE_IN_DANGER", "SLA_RISK"):
+            elif (
+                category == "PLAN_BREACH"
+                and readiness_state == "BLOCKED"
+                and priority not in ("MOVE_IN_DANGER", "SLA_RISK")
+            ):
                 result.append(item)
     return result
 

@@ -119,9 +119,7 @@ def import_unit_master(
 
         norm = raw.upper()
         if norm in seen_norms:
-            preflight_errors.append(
-                f"Row {idx + 2}: duplicate unit_code '{norm}' in import file."
-            )
+            preflight_errors.append(f"Row {idx + 2}: duplicate unit_code '{norm}' in import file.")
             continue
         seen_norms.add(norm)
 
@@ -129,9 +127,7 @@ def import_unit_master(
             continue
 
         if strict:
-            preflight_errors.append(
-                f"Row {idx + 2}: unit '{norm}' not found (strict mode)."
-            )
+            preflight_errors.append(f"Row {idx + 2}: unit '{norm}' not found (strict mode).")
 
     if preflight_errors:
         raise UnitMasterImportError(preflight_errors)
@@ -184,7 +180,9 @@ def import_unit_master(
                         default_code = "_DEFAULT"
                         if default_code not in phase_cache:
                             default_phase = property_service.create_phase(
-                                property_id, default_code, name="Default Phase",
+                                property_id,
+                                default_code,
+                                name="Default Phase",
                             )
                             phase_cache[default_code] = default_phase
                         phase_id = phase_cache[default_code]["phase_id"]
@@ -194,7 +192,9 @@ def import_unit_master(
                         building_id = building_cache[cache_key]["building_id"]
                     else:
                         new_bldg = property_service.create_building(
-                            property_id, phase_id, bldg_val,
+                            property_id,
+                            phase_id,
+                            bldg_val,
                         )
                         building_cache[cache_key] = new_bldg
                         building_id = new_bldg["building_id"]

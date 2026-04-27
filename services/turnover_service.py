@@ -20,8 +20,8 @@ from db.repository import (
 )
 from domain import turnover_lifecycle
 from domain.availability_status import (
-    status_is_on_notice,
     availability_status_to_manual_ready_status,
+    status_is_on_notice,
 )
 from domain.manual_override import should_apply_import_value
 from domain.unit_identity import normalize_unit_code
@@ -110,6 +110,7 @@ def create_turnover(
         # Record unit moving for Work Order Validator
         try:
             from services.unit_movings_service import record_unit_moving
+
             record_unit_moving(unit["unit_code_norm"], move_out_date)
         except Exception:
             # We log but don't fail the whole transaction for unit_movings (non-critical)
@@ -465,7 +466,9 @@ def backfill_placeholder_ready_dates(
             )
             filled += 1
         except Exception:
-            logger.exception("Failed to backfill placeholder ready date for turnover %s", turnover_id)
+            logger.exception(
+                "Failed to backfill placeholder ready date for turnover %s", turnover_id
+            )
             skipped += 1
     return {"filled": filled, "skipped": skipped}
 
@@ -495,6 +498,7 @@ def get_turnover_detail(turnover_id: int) -> dict | None:
 
 
 # ── W/D workflow helpers ──────────────────────────────────────────────────────
+
 
 def mark_wd_notified(turnover_id: int, actor: str = "manager") -> dict:
     """Record that the W/D unit has been notified. Idempotent."""

@@ -12,6 +12,7 @@ from datetime import date
 from statistics import mean
 
 import matplotlib
+
 matplotlib.use("Agg")  # must be before pyplot import
 
 import matplotlib.pyplot as plt  # noqa: E402
@@ -24,11 +25,21 @@ _VACANT_STATES = {tl.PHASE_VACANT_NOT_READY, tl.PHASE_VACANT_READY}
 
 # ── Bar chart helper ──────────────────────────────────────────────────────────
 
-def _bar(ax, labels: list, values: list, title: str, color: str = "#3b82f6",
-         ylabel: str = "Count") -> None:
+
+def _bar(
+    ax, labels: list, values: list, title: str, color: str = "#3b82f6", ylabel: str = "Count"
+) -> None:
     if not labels:
-        ax.text(0.5, 0.5, "No data", ha="center", va="center",
-                transform=ax.transAxes, fontsize=11, color="gray")
+        ax.text(
+            0.5,
+            0.5,
+            "No data",
+            ha="center",
+            va="center",
+            transform=ax.transAxes,
+            fontsize=11,
+            color="gray",
+        )
         ax.set_title(title)
         ax.axis("off")
         return
@@ -40,6 +51,7 @@ def _bar(ax, labels: list, values: list, title: str, color: str = "#3b82f6",
 
 
 # ── Nine chart functions ──────────────────────────────────────────────────────
+
 
 def _chart_turn_time(ax, rows: list[dict]) -> None:
     buckets = ["0-5", "6-10", "11-15", "16-20", "21+"]
@@ -166,6 +178,7 @@ def _chart_days_to_movein(ax, rows: list[dict]) -> None:
 
 
 # ── Main entry point ──────────────────────────────────────────────────────────
+
 
 def build_dashboard_chart(rows: list[dict], today: date) -> bytes:
     """Build a 3×3 bar-chart PNG from export rows. Returns PNG bytes."""

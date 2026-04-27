@@ -1,6 +1,8 @@
 from __future__ import annotations
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+
 from api.deps import get_current_user
 from services import note_service
 from services.note_service import NoteError

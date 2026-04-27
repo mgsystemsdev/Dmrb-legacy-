@@ -1,8 +1,11 @@
 from __future__ import annotations
+
 from datetime import date
 from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+
 from api.deps import get_current_user
 from db.repository import task_repository
 from services import task_service
@@ -47,9 +50,7 @@ async def patch_task(
     if not fields:
         raise HTTPException(status_code=400, detail="No fields to update")
     try:
-        updated = task_service.update_task(
-            task_id, actor=user.get("username", "api"), **fields
-        )
+        updated = task_service.update_task(task_id, actor=user.get("username", "api"), **fields)
         return _serialize(updated)
     except TaskError as exc:
         raise HTTPException(status_code=400, detail=str(exc))

@@ -66,7 +66,10 @@ def complete_chat(
     messages: list[dict[str, str]] = [{"role": "system", "content": _SYSTEM_PROMPT}]
     if app_context and app_context.strip():
         messages.append(
-            {"role": "user", "content": f"Authoritative DMRB context (as of today):\n\n{app_context}"}
+            {
+                "role": "user",
+                "content": f"Authoritative DMRB context (as of today):\n\n{app_context}",
+            }
         )
     messages.extend(normalized)
 

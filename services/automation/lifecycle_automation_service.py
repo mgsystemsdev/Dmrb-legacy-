@@ -155,9 +155,7 @@ def run_on_notice_turnover_creation(
     if today is None:
         today = date.today()
 
-    rows = unit_on_notice_snapshot_repository.get_eligible_for_automation(
-        property_id, today
-    )
+    rows = unit_on_notice_snapshot_repository.get_eligible_for_automation(property_id, today)
     created = 0
     errors: list[str] = []
 
@@ -204,14 +202,10 @@ def run_on_notice_turnover_creation(
             created += 1
         except turnover_service.TurnoverError as exc:
             errors.append(f"unit_id={unit_id}: {exc}")
-            logger.warning(
-                "On-notice turnover creation failed for unit %s: %s", unit_id, exc
-            )
+            logger.warning("On-notice turnover creation failed for unit %s: %s", unit_id, exc)
         except Exception as exc:
             errors.append(f"unit_id={unit_id}: {exc}")
-            logger.exception(
-                "On-notice turnover creation failed for unit %s", unit_id
-            )
+            logger.exception("On-notice turnover creation failed for unit %s", unit_id)
 
     return {"created": created, "errors": errors}
 

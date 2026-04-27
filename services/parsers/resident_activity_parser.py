@@ -22,21 +22,23 @@ logger = logging.getLogger(__name__)
 # Column mapping — update ONLY this dict if the PMS export format changes.
 # ---------------------------------------------------------------------------
 _RA_COLUMNS: dict[str, dict] = {
-    "unit":     {"search": "Bldg/Unit",    "fallback_index": 13},
-    "move_in":  {"search": "Move-in Date", "fallback_index": 65},
-    "status":   {"search": "Status",       "fallback_index": 6},
+    "unit": {"search": "Bldg/Unit", "fallback_index": 13},
+    "move_in": {"search": "Move-in Date", "fallback_index": 65},
+    "status": {"search": "Status", "fallback_index": 6},
 }
 
-_SECTION_KEYWORDS: frozenset[str] = frozenset({
-    "MOVE-OUTS",
-    "MOVE-INS",
-    "NOTICES TO VACATE",
-    "LEASES EXPIRING",
-    "CANCELLED/DENIED",
-    "RENEWALS SIGNED",
-    "TRANSFERS",
-    "PENDING",
-})
+_SECTION_KEYWORDS: frozenset[str] = frozenset(
+    {
+        "MOVE-OUTS",
+        "MOVE-INS",
+        "NOTICES TO VACATE",
+        "LEASES EXPIRING",
+        "CANCELLED/DENIED",
+        "RENEWALS SIGNED",
+        "TRANSFERS",
+        "PENDING",
+    }
+)
 
 
 def _detect_engine(filename: str) -> str:
@@ -76,7 +78,9 @@ def _build_col_map(df: pd.DataFrame, section_row: int) -> dict[str, int]:
             logger.warning(
                 "resident_activity_parser: header '%s' not found in MOVE-INS section "
                 "at row %d; using fallback index %d",
-                cfg["search"], section_row, cfg["fallback_index"],
+                cfg["search"],
+                section_row,
+                cfg["fallback_index"],
             )
             col_map[field] = cfg["fallback_index"]
 
@@ -151,14 +155,17 @@ def parse(file_content: bytes, filename: str = "resident_activity.xls") -> list[
             if move_in_date is None:
                 continue
 
-            records.append({
-                "unit_number": unit_val,
-                "move_in_date": move_in_date,
-                "resident_status": status_val,
-            })
+            records.append(
+                {
+                    "unit_number": unit_val,
+                    "move_in_date": move_in_date,
+                    "resident_status": status_val,
+                }
+            )
 
     logger.info(
         "resident_activity_parser: extracted %d raw move-in records from %d sections",
-        len(records), len(section_rows),
+        len(records),
+        len(section_rows),
     )
     return records
